@@ -39,8 +39,10 @@ def open_customer_profile(
     """
     c = customer_service.get_customer(customer_id)
     if not c:
-        page.open(ft.SnackBar(
-            ft.Text("Müşteri bulunamadı."), bgcolor=theme.ERROR))
+        page.snack_bar = ft.SnackBar(
+            ft.Text("Müşteri bulunamadı."), bgcolor=theme.ERROR)
+        page.snack_bar.open = True
+        page.update()
         return
 
     stats = customer_service.customer_stats(customer_id)
@@ -379,10 +381,12 @@ def open_customer_profile(
     dlg: ft.AlertDialog = ft.AlertDialog(modal=True, bgcolor=theme.SURFACE)
 
     def close(e=None):
-        page.close(dlg)
+        page.dialog.open = False
+        page.update()
 
     def edit(e=None):
-        page.close(dlg)
+        page.dialog.open = False
+        page.update()
         if on_edit:
             on_edit(customer_id)
 
@@ -419,4 +423,6 @@ def open_customer_profile(
     ]
     dlg.actions_alignment = ft.MainAxisAlignment.END
 
-    page.open(dlg)
+    page.dialog = dlg
+    page.dialog.open = True
+    page.update()

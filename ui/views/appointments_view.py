@@ -8,6 +8,15 @@ Randevu yönetimi.
 from datetime import datetime, timedelta, date, time
 import flet as ft
 
+def _dlg_close(page):
+    """Flet 0.24.1 uyumlu dialog kapatma yardımcısı."""
+    try:
+        page.dialog.open = False
+        page.update()
+    except Exception:
+        pass
+
+
 from models import Appointment
 from services import appointment_service, customer_service, staff_service
 from ui import theme
@@ -932,7 +941,9 @@ class AppointmentsView:
     def _delete(self, aid: int) -> None:
         appointment_service.delete_appointment(aid)
         self.refresh()
-        self.page.open(ft.SnackBar(ft.Text("Randevu silindi."), bgcolor=theme.TEXT))
+        self.page.snack_bar = ft.SnackBar(ft.Text("Randevu silindi."), bgcolor=theme.TEXT)
+        self.page.snack_bar.open = True
+        self.page.update()
 
     # ========================================================================
     #                      RANDEVU DETAY MODALI (YENİ)
@@ -942,9 +953,11 @@ class AppointmentsView:
     def open_detail(self, appointment_id: int) -> None:
         a = appointment_service.get_appointment(appointment_id)
         if not a:
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text("Randevu bulunamadı."), bgcolor=theme.ERROR,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
             return
 
         # ----- Bilgi satırları (salt okunur) -----
@@ -1029,7 +1042,8 @@ class AppointmentsView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def save_changes(e):
             try:
@@ -1042,9 +1056,11 @@ class AppointmentsView:
                 appointment_service.update_appointment(cur)
                 close()
                 self.refresh()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text("Randevu güncellendi."), bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except Exception as ex:
                 error_text.value = f"Hata: {ex}"
                 error_text.update()
@@ -1174,7 +1190,9 @@ class AppointmentsView:
         dlg_ref["dlg"] = dlg
 
         try:
-            self.page.open(dlg)
+            self.page.dialog = dlg
+            self.page.dialog.open = True
+            self.page.update()
         except Exception:
             self.page.dialog = dlg
             dlg.open = True
@@ -1203,7 +1221,8 @@ class AppointmentsView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def do_reschedule(e):
             try:
@@ -1217,13 +1236,15 @@ class AppointmentsView:
                 appointment_service.update_appointment(cur)
                 close()
                 self.refresh()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(
                         f"Randevu {new_dt.strftime('%d.%m.%Y %H:%M')} "
                         f"olarak ertelendi."
                     ),
                     bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except ValueError as ex:
                 error_text.value = f"Tarih/saat hatalı: {ex}"
                 error_text.update()
@@ -1262,7 +1283,9 @@ class AppointmentsView:
             actions_alignment=ft.MainAxisAlignment.END,
         )
         dlg_ref["dlg"] = dlg
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # ---------------------------------------------------------- delete confirm
     def _confirm_delete_appointment(self, appointment_id: int) -> None:
@@ -1283,7 +1306,8 @@ class AppointmentsView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def do_delete(e):
             self._delete(appointment_id)
@@ -1313,7 +1337,9 @@ class AppointmentsView:
             actions_alignment=ft.MainAxisAlignment.END,
         )
         dlg_ref["dlg"] = dlg
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # ========================================================================
     #                                  FORM
@@ -1331,8 +1357,10 @@ class AppointmentsView:
         staff_list = staff_service.list_staff(only_active=True)
 
         if not customers:
-            self.page.open(ft.SnackBar(
-                ft.Text("Önce müşteri eklemelisiniz."), bgcolor=theme.ERROR))
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text("Önce müşteri eklemelisiniz."), bgcolor=theme.ERROR)
+            self.page.snack_bar.open = True
+            self.page.update()
             return
 
         # Müşteri için searchable picker (önceki Dropdown yerine)
@@ -1492,9 +1520,12 @@ class AppointmentsView:
                     appointment_service.create_appointment(payload)
                     msg = "Randevu oluşturuldu."
 
-                self.page.close(dlg)
+                self.page.dialog.open = False
+                self.page.update()
                 self.refresh()
-                self.page.open(ft.SnackBar(ft.Text(msg), bgcolor=theme.SUCCESS))
+                self.page.snack_bar = ft.SnackBar(ft.Text(msg), bgcolor=theme.SUCCESS)
+                self.page.snack_bar.open = True
+                self.page.update()
             except Exception as ex:
                 error_text.value = f"Hata: {ex}"
                 error_text.update()
@@ -1519,12 +1550,14 @@ class AppointmentsView:
                 width=560,
             ),
             actions=[
-                theme.ghost_button("Vazgeç", on_click=lambda e: self.page.close(dlg)),
+                theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
                 theme.primary_button("Kaydet", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
 
 # -----------------------------------------------------------

@@ -4,6 +4,15 @@ Kampanya (toplu SMS) yönetimi.
 from datetime import datetime
 import flet as ft
 
+def _dlg_close(page):
+    """Flet 0.24.1 uyumlu dialog kapatma yardımcısı."""
+    try:
+        page.dialog.open = False
+        page.update()
+    except Exception:
+        pass
+
+
 from services import campaign_service, customer_service
 from ui import theme
 
@@ -176,15 +185,18 @@ class CampaignsView:
                 summary = campaign_service.create_and_send_campaign(
                     name.value.strip(), message.value.strip()
                 )
-                self.page.close(dlg)
+                self.page.dialog.open = False
+                self.page.update()
                 self.refresh()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(
                         f"Kampanya gönderildi: {summary['sent']} başarılı, "
                         f"{summary['failed']} başarısız."
                     ),
                     bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except ValueError as ex:
                 error_text.value = str(ex); error_text.update()
 
@@ -201,12 +213,14 @@ class CampaignsView:
                 width=560,
             ),
             actions=[
-                theme.ghost_button("Vazgeç", on_click=lambda e: self.page.close(dlg)),
+                theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
                 theme.primary_button("Gönder", icon=ft.icons.SEND, on_click=send),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
 
 def build(page: ft.Page) -> ft.Control:

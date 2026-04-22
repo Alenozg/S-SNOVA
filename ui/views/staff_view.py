@@ -262,7 +262,8 @@ class StaffView:
 
         def close_dialog(e=None):
             if dlg_ref["dlg"] is not None:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def save(e):
             try:
@@ -291,9 +292,11 @@ class StaffView:
 
                 close_dialog()
                 self.refresh()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(msg), bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except ValueError as ex:
                 error_text.value = str(ex)
                 error_text.update()
@@ -337,7 +340,9 @@ class StaffView:
 
         # Flet sürümlerine göre farklı yollar dene — birinin çalışması garanti
         try:
-            self.page.open(dlg)
+            self.page.dialog = dlg
+            self.page.dialog.open = True
+            self.page.update()
         except Exception as e1:
             try:
                 # Geriye uyumlu fallback
@@ -346,10 +351,12 @@ class StaffView:
                 self.page.update()
             except Exception as e2:
                 print(f"[StaffView] Dialog açma hatası: {e1} / {e2}")
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(f"Dialog açılamadı: {e1}"),
                     bgcolor=theme.ERROR,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
 
     # ==================================================================
     # Renk paleti
@@ -407,15 +414,18 @@ class StaffView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def do_delete(e):
             staff_service.delete_staff(staff_id)
             close()
             self.refresh()
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"{name} silindi."), bgcolor=theme.TEXT,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
 
         dlg = ft.AlertDialog(
             modal=True, bgcolor=theme.SURFACE,
@@ -441,7 +451,9 @@ class StaffView:
             actions_alignment=ft.MainAxisAlignment.END,
         )
         dlg_ref["dlg"] = dlg
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
 
 def build(page: ft.Page) -> ft.Control:

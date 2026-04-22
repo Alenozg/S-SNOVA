@@ -221,7 +221,8 @@ class ServicesView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def save(e):
             try:
@@ -255,9 +256,11 @@ class ServicesView:
 
                 close()
                 self.refresh()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(msg), bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except ValueError as ex:
                 error_text.value = str(ex)
                 error_text.update()
@@ -293,17 +296,21 @@ class ServicesView:
         dlg_ref["dlg"] = dlg
 
         try:
-            self.page.open(dlg)
+            self.page.dialog = dlg
+            self.page.dialog.open = True
+            self.page.update()
         except Exception as e1:
             try:
                 self.page.dialog = dlg
                 dlg.open = True
                 self.page.update()
             except Exception as e2:
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(f"Dialog açılamadı: {e1}"),
                     bgcolor=theme.ERROR,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
 
     # ==================================================================
     # Silme onayı
@@ -322,15 +329,18 @@ class ServicesView:
 
         def close(e=None):
             if dlg_ref["dlg"]:
-                self.page.close(dlg_ref["dlg"])
+                self.page.dialog.open = False
+                self.page.update()
 
         def do_delete(e):
             service_service.delete_service(service_id)
             close()
             self.refresh()
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"'{name}' silindi."), bgcolor=theme.TEXT,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
 
         dlg = ft.AlertDialog(
             modal=True, bgcolor=theme.SURFACE,
@@ -356,7 +366,9 @@ class ServicesView:
             actions_alignment=ft.MainAxisAlignment.END,
         )
         dlg_ref["dlg"] = dlg
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
 
 def build(page: ft.Page) -> ft.Control:

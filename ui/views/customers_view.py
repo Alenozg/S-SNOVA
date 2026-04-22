@@ -10,6 +10,15 @@ Müşteri yönetimi:
 from datetime import date, datetime
 from pathlib import Path
 
+def _dlg_close(page):
+    """Flet 0.24.1 uyumlu dialog kapatma yardımcısı."""
+    try:
+        page.dialog.open = False
+        page.update()
+    except Exception:
+        pass
+
+
 import flet as ft
 
 from models import Customer
@@ -70,9 +79,9 @@ class CustomersView:
     def build(self) -> ft.Control:
         # FilePicker'ları overlay'e ekle (sadece bir kez; view tekrar build edilirse tekrar eklenmesin)
         if not self._pickers_mounted:
-            self.page.overlay.extend(
-                [self.import_picker, self.export_picker, self.template_picker]
-            )
+            page.overlay.append(self.import_picker)
+            page.overlay.append(self.export_picker)
+            page.overlay.append(self.template_picker)
             self._pickers_mounted = True
 
         header = ft.Row(
@@ -230,15 +239,18 @@ class CustomersView:
                     message_template=msg,
                     sms_type="campaign",
                 )
-                self.page.close(dlg)
+                self.page.dialog.open = False
+                self.page.update()
                 self._clear_selection()
-                self.page.open(ft.SnackBar(
+                self.page.snack_bar = ft.SnackBar(
                     ft.Text(
                         f"Toplu SMS tamamlandı: {result['sent']} başarılı, "
                         f"{result['failed']} başarısız."
                     ),
                     bgcolor=theme.SUCCESS,
-                ))
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
             except Exception as ex:
                 error_text.value = f"Hata: {ex}"
                 error_text.update()
@@ -274,13 +286,15 @@ class CustomersView:
             ),
             actions=[
                 theme.ghost_button("Vazgeç",
-                                   on_click=lambda e: self.page.close(dlg)),
+                                   on_click=lambda e: _dlg_close(self.page)),
                 theme.primary_button("Gönder",
                                      icon=ft.icons.SEND, on_click=send),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     def _toggle_select(self, customer_id: int, checked: bool) -> None:
         if checked:
@@ -644,9 +658,12 @@ class CustomersView:
                     customer_service.create_customer(payload)
                     msg = "Müşteri eklendi."
 
-                self.page.close(dlg)
+                self.page.dialog.open = False
+                self.page.update()
                 self.refresh()
-                self.page.open(ft.SnackBar(ft.Text(msg), bgcolor=theme.SUCCESS))
+                self.page.snack_bar = ft.SnackBar(ft.Text(msg), bgcolor=theme.SUCCESS)
+                self.page.snack_bar.open = True
+                self.page.update()
             except ValueError as ex:
                 error_text.value = str(ex)
                 error_text.update()
@@ -671,21 +688,26 @@ class CustomersView:
                 width=520,
             ),
             actions=[
-                theme.ghost_button("Vazgeç", on_click=lambda e: self.page.close(dlg)),
+                theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
                 theme.primary_button("Kaydet", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # ---------------------------------------------------------- delete
     def confirm_delete(self, customer_id: int, name: str) -> None:
         def do_delete(e):
             customer_service.delete_customer(customer_id)
-            self.page.close(dlg)
+            self.page.dialog.open = False
+            self.page.update()
             self.refresh()
-            self.page.open(ft.SnackBar(ft.Text(f"{name} silindi."),
-                                       bgcolor=theme.TEXT))
+            self.page.snack_bar = ft.SnackBar(ft.Text(f"{name} silindi."),
+                                       bgcolor=theme.TEXT)
+            self.page.snack_bar.open = True
+            self.page.update()
 
         dlg = ft.AlertDialog(
             modal=True, bgcolor=theme.SURFACE,
@@ -697,7 +719,7 @@ class CustomersView:
                 color=theme.TEXT_MUTED, size=13,
             ),
             actions=[
-                theme.ghost_button("Vazgeç", on_click=lambda e: self.page.close(dlg)),
+                theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
                 ft.FilledButton(
                     "Sil", on_click=do_delete,
                     style=ft.ButtonStyle(
@@ -709,7 +731,9 @@ class CustomersView:
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # ====================================================================
     #                      TOPLU İÇE / DIŞA AKTARMA
@@ -750,7 +774,8 @@ class CustomersView:
 
         def pick_file(e):
             self._import_duplicate_mode = dup_dd.value or "skip"
-            self.page.close(dlg)
+            self.page.dialog.open = False
+            self.page.update()
             self.import_picker.pick_files(
                 dialog_title="İçe aktarılacak CSV dosyasını seçin",
                 allowed_extensions=["csv", "CSV"],
@@ -767,7 +792,7 @@ class CustomersView:
                 width=520,
             ),
             actions=[
-                theme.ghost_button("Vazgeç", on_click=lambda e: self.page.close(dlg)),
+                theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
                 theme.primary_button(
                     "Dosya Seç", icon=ft.icons.FOLDER_OPEN_OUTLINED,
                     on_click=pick_file,
@@ -775,7 +800,9 @@ class CustomersView:
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     def _on_import_file_picked(self, e: ft.FilePickerResultEvent) -> None:
         if not e.files:
@@ -791,17 +818,21 @@ class CustomersView:
             # macOS TCC izin hatası - uzun mesaj, detaylı dialog gerekir
             self._show_permission_error(str(ex), str(path))
         except FileNotFoundError:
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"Dosya bulunamadı: {path}"), bgcolor=theme.ERROR,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
         except ValueError as ex:
             # Format / içerik hataları (örn. eksik sütun, boş dosya)
             self._show_format_error(str(ex))
         except Exception as ex:
             # Yakalanmamış her şey - uygulama çökmesin
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"Beklenmeyen hata: {ex}"), bgcolor=theme.ERROR,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
 
     def _show_permission_error(self, message: str, file_path: str) -> None:
         """macOS izin hatası için anlaşılır rehber dialog."""
@@ -923,11 +954,13 @@ class CustomersView:
             ),
             actions=[
                 theme.primary_button("Anladım",
-                                     on_click=lambda e: self.page.close(dlg)),
+                                     on_click=lambda e: _dlg_close(self.page)),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     def _show_format_error(self, message: str) -> None:
         """CSV format / içerik hatası için dialog."""
@@ -976,11 +1009,13 @@ class CustomersView:
             ),
             actions=[
                 theme.primary_button("Tamam",
-                                     on_click=lambda e: self.page.close(dlg)),
+                                     on_click=lambda e: _dlg_close(self.page)),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     def _show_import_result(self, result: import_export_service.ImportResult) -> None:
         def stat(label: str, value: int, color: str) -> ft.Container:
@@ -1051,11 +1086,13 @@ class CustomersView:
                 width=580,
             ),
             actions=[
-                theme.primary_button("Tamam", on_click=lambda e: self.page.close(dlg)),
+                theme.primary_button("Tamam", on_click=lambda e: _dlg_close(self.page)),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        self.page.open(dlg)
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # --------------------------------------------- dışa aktar
     def _open_export(self) -> None:
@@ -1077,14 +1114,18 @@ class CustomersView:
                 path, only_iys=only_iys,
             )
             suffix = " (sadece İYS onaylı)" if only_iys else ""
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"{count} müşteri CSV'ye yazıldı{suffix}."),
                 bgcolor=theme.SUCCESS,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
         except Exception as ex:
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"Dışa aktarma hatası: {ex}"), bgcolor=theme.ERROR,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
 
     # --------------------------------------------- şablon
     def _save_template(self) -> None:
@@ -1102,14 +1143,18 @@ class CustomersView:
             path = path.with_suffix(".csv")
         try:
             import_export_service.generate_template_csv(path)
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"Şablon oluşturuldu: {path.name}"),
                 bgcolor=theme.SUCCESS,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
         except Exception as ex:
-            self.page.open(ft.SnackBar(
+            self.page.snack_bar = ft.SnackBar(
                 ft.Text(f"Şablon oluşturma hatası: {ex}"), bgcolor=theme.ERROR,
-            ))
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
 
 
 def build(page: ft.Page) -> ft.Control:

@@ -5,18 +5,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Flet 0.24.x web modunda ihtiyaç duyduğu runtime kütüphaneleri
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libglib2.0-0 \
-    libglib2.0-dev \
     gcc \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Bağımlılıkları kur
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Uygulama kodunu kopyala
 COPY . .
 
 EXPOSE 8080

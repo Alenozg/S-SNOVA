@@ -434,7 +434,7 @@ class StaffView:
             content=ft.Text(warning, color=theme.TEXT_MUTED, size=13),
             actions=[
                 theme.ghost_button("Vazgeç", on_click=close),
-                ft.FilledButton(
+                ft.ElevatedButton(
                     "Sil", on_click=do_delete,
                     style=ft.ButtonStyle(
                         bgcolor=theme.ERROR, color="#FFFFFF",

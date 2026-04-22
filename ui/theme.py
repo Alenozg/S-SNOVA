@@ -103,8 +103,8 @@ def divider() -> ft.Container:
     return ft.Container(height=1, bgcolor=DIVIDER)
 
 
-def primary_button(text: str, on_click=None, icon: str | None = None) -> ft.FilledButton:
-    return ft.FilledButton(
+def primary_button(text: str, on_click=None, icon: str | None = None) -> ft.ElevatedButton:
+    return ft.ElevatedButton(
         text=text,
         icon=icon,
         on_click=on_click,

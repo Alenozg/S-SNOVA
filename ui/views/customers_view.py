@@ -720,7 +720,7 @@ class CustomersView:
             ),
             actions=[
                 theme.ghost_button("Vazgeç", on_click=lambda e: _dlg_close(self.page)),
-                ft.FilledButton(
+                ft.ElevatedButton(
                     "Sil", on_click=do_delete,
                     style=ft.ButtonStyle(
                         bgcolor=theme.ERROR, color="#FFFFFF",

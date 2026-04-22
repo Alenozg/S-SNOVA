@@ -5,4 +5,7 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "python main.py"
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5
+
+[environments.production.variables]
+DATABASE_PATH = "/data/salon.db"

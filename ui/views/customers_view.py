@@ -61,7 +61,10 @@ class CustomersView:
         self.list_container = ft.Column(spacing=0)
 
         # FilePicker'lar - Flet overlay'e eklenecek
-        self.import_picker = ft.FilePicker(on_result=self._on_import_file_picked)
+        self.import_picker = ft.FilePicker(
+            on_result=self._on_import_file_picked,
+            on_upload=self._on_import_upload,
+        )
         self.export_picker = ft.FilePicker(on_result=self._on_export_path_picked)
         self.template_picker = ft.FilePicker(on_result=self._on_template_path_picked)
         self._pickers_mounted = False
@@ -805,44 +808,75 @@ class CustomersView:
         self.page.update()
 
     def _on_import_file_picked(self, e: ft.FilePickerResultEvent) -> None:
+        """Dosya seçildi — path varsa direkt oku, yoksa upload mekanizmasını başlat."""
         if not e.files:
             return
         f = e.files[0]
-        try:
-            # Flet 0.25.2: web modunda path server-side temp path olarak gelir
-            if not f.path:
+
+        # Desktop modunda path gelir, direkt oku
+        if f.path:
+            try:
+                result = import_export_service.import_customers_from_csv(
+                    Path(f.path), duplicate_mode=self._import_duplicate_mode,
+                )
+                self.refresh()
+                self._show_import_result(result)
+            except PermissionError as ex:
+                self._show_permission_error(str(ex), f.path)
+            except Exception as ex:
                 self.page.snack_bar = ft.SnackBar(
-                    ft.Text("Dosya yolu alınamadı. Lütfen tekrar deneyin."),
-                    bgcolor=theme.ERROR,
+                    ft.Text(f"Hata: {ex}"), bgcolor=theme.ERROR,
                 )
                 self.page.snack_bar.open = True
                 self.page.update()
-                return
-            path = Path(f.path)
+            return
+
+        # Web modunda: upload mekanizmasını başlat
+        try:
+            upload_url = self.page.get_upload_url(f.name, 60)
+            self.import_picker.upload([
+                ft.FilePickerUploadFile(name=f.name, upload_url=upload_url)
+            ])
+        except Exception as ex:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(f"Yükleme başlatılamadı: {ex}"), bgcolor=theme.ERROR,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+
+    def _on_import_upload(self, e: ft.FilePickerUploadEvent) -> None:
+        """Upload tamamlandığında dosyayı oku ve içe aktar."""
+        if e.error:
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(f"Yükleme hatası: {e.error}"), bgcolor=theme.ERROR,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        # progress=None veya 1.0 → tamamlandı
+        if e.progress is not None and e.progress < 1.0:
+            return  # Hâlâ yükleniyor
+
+        upload_path = Path("/tmp/flet_uploads") / e.file_name
+        try:
             result = import_export_service.import_customers_from_csv(
-                path, duplicate_mode=self._import_duplicate_mode,
+                upload_path, duplicate_mode=self._import_duplicate_mode,
             )
             self.refresh()
             self._show_import_result(result)
-        except PermissionError as ex:
-            # macOS TCC izin hatası - uzun mesaj, detaylı dialog gerekir
-            self._show_permission_error(str(ex), str(path))
-        except FileNotFoundError:
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text(f"Dosya bulunamadı: {path}"), bgcolor=theme.ERROR,
-            )
-            self.page.snack_bar.open = True
-            self.page.update()
-        except ValueError as ex:
-            # Format / içerik hataları (örn. eksik sütun, boş dosya)
-            self._show_format_error(str(ex))
         except Exception as ex:
-            # Yakalanmamış her şey - uygulama çökmesin
             self.page.snack_bar = ft.SnackBar(
-                ft.Text(f"Beklenmeyen hata: {ex}"), bgcolor=theme.ERROR,
+                ft.Text(f"Hata: {ex}"), bgcolor=theme.ERROR,
             )
             self.page.snack_bar.open = True
             self.page.update()
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
 
     def _show_permission_error(self, message: str, file_path: str) -> None:
         """macOS izin hatası için anlaşılır rehber dialog."""

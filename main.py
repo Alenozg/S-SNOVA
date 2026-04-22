@@ -109,7 +109,7 @@ if __name__ == "__main__":
             except AttributeError:
                 pass
 
-        ft.app(target=main, view=web_view, host="0.0.0.0", port=port)
+        ft.app(target=main, view=web_view, host="0.0.0.0", port=port, upload_dir="/tmp/flet_uploads")
     else:
         log.info("Masaustu modu")
         ft.app(target=main)

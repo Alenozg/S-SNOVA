@@ -77,11 +77,17 @@ def main(page: ft.Page) -> None:
 
 
 def bootstrap() -> None:
-    db_path = config.DATABASE_PATH
-    db_exists = db_path.exists()
-    db_size   = db_path.stat().st_size if db_exists else 0
-    log.info("Veritabani baslatiliyor: %s (mevcut=%s, boyut=%d bytes)",
-             db_path, db_exists, db_size)
+    import os as _os
+    from database.db_manager import _USE_PG
+
+    if _USE_PG:
+        log.info("Veritabani modu: POSTGRESQL — veriler kalici olarak saklanir.")
+    else:
+        db_path = config.DATABASE_PATH
+        db_exists = db_path.exists()
+        db_size   = db_path.stat().st_size if db_exists else 0
+        log.info("Veritabani modu: SQLITE — %s (mevcut=%s, boyut=%d bytes)",
+                 db_path, db_exists, db_size)
 
     init_database()
     seed_admin()

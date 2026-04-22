@@ -9,3 +9,4 @@ restartPolicyMaxRetries = 5
 
 [environments.production.variables]
 DATABASE_PATH = "/data/salon.db"
+FLET_SECRET_KEY = "sisnova-crm-secret-2026"

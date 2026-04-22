@@ -109,15 +109,13 @@ if __name__ == "__main__":
             except AttributeError:
                 pass
 
-        import secrets as _secrets
-        secret_key = os.environ.get("FLET_SECRET_KEY", "sisnova-crm-upload-key-2026")
+        # FLET_SECRET_KEY env var olarak okunur (railway.toml'da set edildi)
         ft.app(
             target=main,
             view=web_view,
             host="0.0.0.0",
             port=port,
             upload_dir="/tmp/flet_uploads",
-            secret_key=secret_key,
         )
     else:
         log.info("Masaustu modu")

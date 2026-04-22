@@ -275,9 +275,7 @@ class ServicesView:
                 color=theme.TEXT, weight=ft.FontWeight.W_400,
                 font_family=theme.FONT_FAMILY_DISPLAY, size=22,
             ),
-            content=ft.Container(
-                width=480,
-                content=ft.Column(
+            content=ft.Column(
                     [
                         name_field,
                         ft.Row([duration_field, price_field], spacing=12),
@@ -286,7 +284,6 @@ class ServicesView:
                     ],
                     tight=True, spacing=12,
                 ),
-            ),
             actions=[
                 theme.ghost_button("Vazgeç", on_click=close),
                 theme.primary_button("Kaydet", on_click=save),

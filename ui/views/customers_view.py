@@ -79,9 +79,9 @@ class CustomersView:
     def build(self) -> ft.Control:
         # FilePicker'ları overlay'e ekle (sadece bir kez; view tekrar build edilirse tekrar eklenmesin)
         if not self._pickers_mounted:
-            page.overlay.append(self.import_picker)
-            page.overlay.append(self.export_picker)
-            page.overlay.append(self.template_picker)
+            self.page.overlay.append(self.import_picker)
+            self.page.overlay.append(self.export_picker)
+            self.page.overlay.append(self.template_picker)
             self._pickers_mounted = True
 
         header = ft.Row(

@@ -66,7 +66,7 @@ class AppointmentsView:
 
         # Görünüm toggle butonları (build'de oluşturulur)
         self.view_toggle = ft.Row(spacing=0)
-        self.body_container = ft.Container(expand=True)
+        self.body_container = ft.Container(expand=True, bgcolor=theme.BG, clip_behavior=ft.ClipBehavior.ANTI_ALIAS)
         self.date_label = ft.Text(
             "", size=16, weight=ft.FontWeight.W_400, color=theme.TEXT,
             font_family=theme.FONT_FAMILY_DISPLAY,
@@ -1112,9 +1112,7 @@ class AppointmentsView:
         dlg = ft.AlertDialog(
             modal=True, bgcolor=theme.SURFACE,
             title=title_row,
-            content=ft.Container(
-                width=520,
-                content=ft.Column(
+            content=ft.Column(
                     [
                         info_row(
                             "Tarih / Saat", when_str,
@@ -1163,7 +1161,6 @@ class AppointmentsView:
                     ],
                     tight=True, spacing=8,
                 ),
-            ),
             actions=[
                 ft.FilledButton(
                     "Sil", on_click=delete_clicked,
@@ -1259,9 +1256,7 @@ class AppointmentsView:
                 color=theme.TEXT, weight=ft.FontWeight.W_400,
                 font_family=theme.FONT_FAMILY_DISPLAY, size=20,
             ),
-            content=ft.Container(
-                width=400,
-                content=ft.Column(
+            content=ft.Column(
                     [
                         theme.caption(
                             f"Mevcut: {current_dt.strftime('%d.%m.%Y %H:%M')}"
@@ -1272,7 +1267,6 @@ class AppointmentsView:
                     ],
                     tight=True, spacing=8,
                 ),
-            ),
             actions=[
                 theme.ghost_button("Vazgeç", on_click=close),
                 theme.primary_button(

@@ -312,9 +312,7 @@ class StaffView:
                 color=theme.TEXT, weight=ft.FontWeight.W_400,
                 font_family=theme.FONT_FAMILY_DISPLAY, size=22,
             ),
-            content=ft.Container(
-                width=560,
-                content=ft.Column(
+            content=ft.Column(
                     [
                         ft.Row([first, last], spacing=12),
                         role,
@@ -329,7 +327,6 @@ class StaffView:
                     ],
                     tight=True, spacing=12,
                 ),
-            ),
             actions=[
                 theme.ghost_button("Vazgeç", on_click=close_dialog),
                 theme.primary_button("Kaydet", on_click=save),

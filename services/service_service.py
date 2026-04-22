@@ -11,7 +11,8 @@ def list_services(only_active: bool = False) -> list[Service]:
     q = "SELECT * FROM services"
     if only_active:
         q += " WHERE active = 1"
-    q += " ORDER BY name COLLATE NOCASE"
+    from database.db_manager import _USE_PG as _pg
+    q += " ORDER BY LOWER(name)" if _pg else " ORDER BY name COLLATE NOCASE"
     rows = fetch_all(q)
     return [Service.from_row(r) for r in rows]
 

@@ -63,7 +63,11 @@ def list_customers(
         query += " AND (is_valid = 0 OR is_valid IS NULL)"
 
     # Hatalı kayıtlar önce çıksın, kullanıcı hemen görsün
-    query += " ORDER BY is_valid ASC, first_name COLLATE NOCASE, last_name COLLATE NOCASE"
+    from database.db_manager import _USE_PG as _pg
+    if _pg:
+        query += " ORDER BY is_valid ASC, LOWER(first_name), LOWER(last_name)"
+    else:
+        query += " ORDER BY is_valid ASC, first_name COLLATE NOCASE, last_name COLLATE NOCASE"
     rows = fetch_all(query, tuple(params))
     customers = [Customer.from_row(r) for r in rows]
 
@@ -266,14 +270,25 @@ def delete_customer(customer_id: int) -> None:
 
 def get_birthday_customers(today: Optional[date] = None) -> list[Customer]:
     """Bugün doğum günü olan, İYS onayı olan müşteriler."""
+    from database.db_manager import _USE_PG
     today = today or date.today()
-    rows = fetch_all(
-        """SELECT * FROM customers
-           WHERE iys_consent = 1
-             AND birth_date IS NOT NULL
-             AND strftime('%m-%d', birth_date) = ?""",
-        (today.strftime("%m-%d"),),
-    )
+    month_day = f"{today.month:02d}-{today.day:02d}"
+    if _USE_PG:
+        rows = fetch_all(
+            """SELECT * FROM customers
+               WHERE iys_consent = 1
+                 AND birth_date IS NOT NULL
+                 AND TO_CHAR(birth_date, 'MM-DD') = %s""",
+            (month_day,),
+        )
+    else:
+        rows = fetch_all(
+            """SELECT * FROM customers
+               WHERE iys_consent = 1
+                 AND birth_date IS NOT NULL
+                 AND strftime('%m-%d', birth_date) = ?""",
+            (month_day,),
+        )
     return [Customer.from_row(r) for r in rows]
 
 

@@ -1,0 +1,6 @@
+flet==0.24.1
+APScheduler==3.10.4
+requests==2.32.3
+python-dotenv==1.0.1
+urllib3>=1.21.1,<2
+charset-normalizer>=2,<4

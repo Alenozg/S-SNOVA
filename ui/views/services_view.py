@@ -200,13 +200,13 @@ class ServicesView:
             hint="Örn. Lazer Epilasyon, İpek Kirpik, Cilt Bakımı",
         )
         duration_field = theme.text_field(
-            "İşlem Süresi (dakika)",
+            "Süre (dk)",
             str(existing.duration_min) if existing else "30",
             hint="Sadece sayı — randevu takvimi bu süreyi kullanır",
         )
         price_field = theme.text_field(
             "Fiyat (₺)",
-            str(int(existing.price)) if existing and existing.price else "",
+            str(int(existing.price)) if existing and existing.price is not None else "",
             hint="Ondalık için nokta kullanın (örn. 250 veya 249.90)",
         )
         active_cb = ft.Checkbox(
@@ -278,7 +278,8 @@ class ServicesView:
             content=ft.Column(
                     [
                         name_field,
-                        ft.Row([duration_field, price_field], spacing=12),
+                        duration_field,
+                        price_field,
                         active_cb,
                         error_text,
                     ],

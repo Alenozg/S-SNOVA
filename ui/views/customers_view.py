@@ -809,24 +809,19 @@ class CustomersView:
             return
         f = e.files[0]
         try:
-            # Web modunda path=None, bytes kullan
-            if f.path:
-                result = import_export_service.import_customers_from_csv(
-                    Path(f.path), duplicate_mode=self._import_duplicate_mode,
-                )
-            elif f.bytes:
-                result = import_export_service.import_customers_from_bytes(
-                    f.bytes, duplicate_mode=self._import_duplicate_mode,
-                )
-            else:
+            # Flet 0.25.2: web modunda path server-side temp path olarak gelir
+            if not f.path:
                 self.page.snack_bar = ft.SnackBar(
-                    ft.Text("Dosya okunamadı. Lütfen tekrar deneyin."),
+                    ft.Text("Dosya yolu alınamadı. Lütfen tekrar deneyin."),
                     bgcolor=theme.ERROR,
                 )
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
-            path = Path(f.path) if f.path else Path(f.name or "import.csv")
+            path = Path(f.path)
+            result = import_export_service.import_customers_from_csv(
+                path, duplicate_mode=self._import_duplicate_mode,
+            )
             self.refresh()
             self._show_import_result(result)
         except PermissionError as ex:

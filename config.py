@@ -2,33 +2,30 @@
 Uygulama genelinde kullanılan ayarlar.
 """
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
+
+log = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 # ── Veritabanı yolu ──────────────────────────────────────────────
-# Öncelik sırası:
-# 1. DATABASE_PATH env var (Railway Volume için: /data/salon.db)
-# 2. Railway ortamı otomatik algıla → /data/salon.db
-# 3. Lokal geliştirme → proje klasöründe salon.db
+# Öncelik:
+# 1. DATABASE_PATH env var (Dockerfile'da /data/salon.db olarak set edildi)
+# 2. Lokal geliştirme → proje klasöründe salon.db
 _db_env = os.getenv("DATABASE_PATH", "").strip()
-
 if _db_env:
     DATABASE_PATH = Path(_db_env)
-elif os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PROJECT_ID"):
-    # Railway üzerindeyiz → Volume /data'ya mount edilmiş beklenir
-    DATABASE_PATH = Path("/data/salon.db")
-elif os.getenv("PORT"):
-    # Başka bir cloud ortamı
-    DATABASE_PATH = Path("/data/salon.db")
 else:
-    # Lokal
     DATABASE_PATH = BASE_DIR / "salon.db"
 
-# Klasörün var olduğundan emin ol (Volume mount edilmişse /data zaten var)
-DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+# Klasörü garantile
+try:
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 # ── Uygulama ────────────────────────────────────────────────────
 APP_NAME    = os.getenv("APP_NAME", "Sisnova Beauty")
@@ -36,11 +33,11 @@ APP_VERSION = "1.2.0"
 SALON_NAME  = os.getenv("SALON_NAME", "Sisnova Beauty")
 
 # ── SMS Sağlayıcı ────────────────────────────────────────────────
-SMS_PROVIDER       = os.getenv("SMS_PROVIDER", "mock")
-NETGSM_USERCODE    = os.getenv("NETGSM_USERCODE", "")
-NETGSM_PASSWORD    = os.getenv("NETGSM_PASSWORD", "")
-NETGSM_HEADER      = os.getenv("NETGSM_HEADER", "")
-GENERIC_SMS_URL    = os.getenv("GENERIC_SMS_URL", "")
+SMS_PROVIDER        = os.getenv("SMS_PROVIDER", "mock")
+NETGSM_USERCODE     = os.getenv("NETGSM_USERCODE", "")
+NETGSM_PASSWORD     = os.getenv("NETGSM_PASSWORD", "")
+NETGSM_HEADER       = os.getenv("NETGSM_HEADER", "")
+GENERIC_SMS_URL     = os.getenv("GENERIC_SMS_URL", "")
 GENERIC_SMS_API_KEY = os.getenv("GENERIC_SMS_API_KEY", "")
 GENERIC_SMS_SENDER  = os.getenv("GENERIC_SMS_SENDER", "")
 

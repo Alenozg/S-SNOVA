@@ -77,9 +77,31 @@ def main(page: ft.Page) -> None:
 
 
 def bootstrap() -> None:
-    log.info("Veritabani baslatiliyor: %s", config.DATABASE_PATH)
+    db_path = config.DATABASE_PATH
+    db_exists = db_path.exists()
+    db_size   = db_path.stat().st_size if db_exists else 0
+    log.info("Veritabani baslatiliyor: %s (mevcut=%s, boyut=%d bytes)",
+             db_path, db_exists, db_size)
+
     init_database()
     seed_admin()
+
+    # Başlangıç teşhisi — volume çalışıyor mu?
+    try:
+        from database.db_manager import fetch_one
+        row = fetch_one("SELECT COUNT(*) as cnt FROM customers")
+        cust_count = row["cnt"] if row else 0
+        row2 = fetch_one("SELECT COUNT(*) as cnt FROM users")
+        user_count = row2["cnt"] if row2 else 0
+        new_size = db_path.stat().st_size if db_path.exists() else 0
+        log.info("DB DURUM: musteriler=%d, kullanicilar=%d, dosya_boyutu=%d bytes",
+                 cust_count, user_count, new_size)
+        if cust_count == 0:
+            log.warning("DB UYARI: Musteri bulunamadi. Volume mount edildi mi? (/data)")
+        else:
+            log.info("DB OK: Veriler korunuyor (%d musteri)", cust_count)
+    except Exception as e:
+        log.error("DB teşhis hatası: %s", e)
     log.info("SMS saglayici: %s", config.SMS_PROVIDER)
 
     if IS_WEB:

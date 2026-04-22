@@ -23,8 +23,8 @@ def get_connection() -> sqlite3.Connection:
     )
     conn.row_factory = _dict_factory
     conn.execute("PRAGMA foreign_keys = ON;")
-    conn.execute("PRAGMA journal_mode = WAL;")
-    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA journal_mode = DELETE;")   # WAL Railway volume'da sorun çıkarabilir
+    conn.execute("PRAGMA synchronous = FULL;")       # En güvenli mod — her commit'i diske yazar
     return conn
 
 

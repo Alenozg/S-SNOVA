@@ -30,14 +30,34 @@ ROUTES = {
 
 
 class SalonApp:
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, current_user: dict | None = None):
         self.page = page
+        self.current_user = current_user or {}
         self.content_area = ft.Container(
             expand=True,
             bgcolor=theme.BG,
             padding=ft.padding.symmetric(horizontal=48, vertical=40),
         )
-        self.sidebar = Sidebar(on_change=self.navigate, active="dashboard")
+        self.sidebar = Sidebar(
+            on_change=self.navigate,
+            active="dashboard",
+            current_user=self.current_user,
+            on_logout=self._logout,
+        )
+
+    def _logout(self):
+        """Oturumu kapat, login ekranına dön."""
+        try:
+            self.page.session.remove("current_user")
+        except Exception:
+            pass
+        self.page.controls.clear()
+        from ui.views.login_view import build_login
+        def reload(user):
+            self.page.controls.clear()
+            app = SalonApp(self.page, current_user=user)
+            app.mount()
+        self.page.add(build_login(self.page, on_success=reload))
 
     def mount(self) -> None:
         layout = ft.Row(
@@ -57,13 +77,11 @@ class SalonApp:
             self.content_area.update()
         except Exception as ex:
             self.content_area.content = ft.Container(
-                content=ft.Column(
-                    [
-                        theme.h2("Bir şeyler ters gitti"),
-                        ft.Container(height=8),
-                        theme.body(f"{ex}", muted=True),
-                    ],
-                ),
+                content=ft.Column([
+                    theme.h2("Bir şeyler ters gitti"),
+                    ft.Container(height=8),
+                    theme.body(f"{ex}", muted=True),
+                ]),
                 padding=40,
             )
             self.content_area.update()

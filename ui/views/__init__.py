@@ -19,3 +19,4 @@ __all__ = [
     "sms_logs_view",
     "settings_view",
 ]
+from . import login_view

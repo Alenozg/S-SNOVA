@@ -23,6 +23,8 @@ def get_connection() -> sqlite3.Connection:
     )
     conn.row_factory = _dict_factory
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
     return conn
 
 

@@ -436,6 +436,124 @@ def export_customers_to_csv(
     return len(customers)
 
 
+
+
+def import_customers_from_bytes(
+    raw: bytes,
+    filename: str = "import.csv",
+    *,
+    duplicate_mode: str = "skip",
+) -> "ImportResult":
+    """Web modunda FilePicker bytes'ından CSV içe aktar."""
+    text = _decode(raw)
+    delim = _detect_delimiter(text)
+    import csv as _csv, io as _io
+    reader = _csv.DictReader(_io.StringIO(text), delimiter=delim)
+    headers = list(reader.fieldnames or [])
+    rows = list(reader)
+
+    if not rows:
+        raise ValueError("CSV dosyası boş.")
+
+    known_mapping: dict[str, str] = {}
+    extra_mapping: dict[str, str] = {}
+    for h in headers:
+        norm = _normalize_header(h)
+        if norm:
+            known_mapping[h] = norm
+            continue
+        key = (h or "").strip().lower().replace("\ufeff", "")
+        if key in EXTRA_COLUMNS_TO_NOTES:
+            extra_mapping[h] = EXTRA_COLUMNS_TO_NOTES[key]
+
+    found = set(known_mapping.values())
+    required = {"first_name", "last_name", "phone"}
+    missing = required - found
+    if missing:
+        missing_tr = {"first_name": "ad", "last_name": "soyad", "phone": "telefon"}
+        raise ValueError(
+            f"Eksik zorunlu sütun(lar): {', '.join(missing_tr[m] for m in missing)}. "
+            f"Bulunan sütunlar: {', '.join(headers)}"
+        )
+
+    from models import Customer
+    from services import customer_service as _cs
+    result = ImportResult()
+
+    for i, row in enumerate(rows, start=2):
+        try:
+            data: dict[str, str] = {}
+            for original, field_name in known_mapping.items():
+                data[field_name] = (row.get(original) or "").strip()
+
+            extras_parts = []
+            for original, label in extra_mapping.items():
+                val = (row.get(original) or "").strip()
+                if val:
+                    extras_parts.append(f"{label}: {val}")
+
+            base_notes = data.get("notes", "").strip()
+            combined_notes = base_notes
+            if extras_parts:
+                extras_str = " | ".join(extras_parts)
+                combined_notes = f"{base_notes} | {extras_str}" if base_notes else extras_str
+
+            birth_date = None
+            raw_birth = data.get("birth_date", "")
+            if raw_birth:
+                try:
+                    birth_date = _parse_date(raw_birth)
+                except ValueError:
+                    combined_notes = (
+                        f"{combined_notes} | Doğum tarihi bozuk: {raw_birth}"
+                        if combined_notes else f"Doğum tarihi bozuk: {raw_birth}"
+                    )
+
+            iys = _parse_iys(data.get("iys_consent", ""))
+            phone_raw = data.get("phone", "")
+            phone_normalized = ""
+            if phone_raw:
+                try:
+                    phone_normalized = Customer.normalize_phone(phone_raw)
+                except ValueError:
+                    phone_normalized = ""
+
+            existing = _cs.get_by_phone(phone_normalized) if phone_normalized else None
+
+            if existing:
+                if duplicate_mode == "update":
+                    customer = Customer(
+                        id=existing.id,
+                        first_name=data.get("first_name") or existing.first_name,
+                        last_name=data.get("last_name") or existing.last_name,
+                        phone=phone_normalized,
+                        birth_date=birth_date or existing.birth_date,
+                        iys_consent=iys,
+                        notes=combined_notes or existing.notes,
+                    )
+                    _cs.update_customer(customer)
+                    result.updated += 1
+                else:
+                    result.skipped += 1
+                continue
+
+            _, row_errors = _cs.create_customer_tolerant(
+                first_name=data.get("first_name", ""),
+                last_name=data.get("last_name", ""),
+                phone_raw=phone_raw,
+                birth_date=birth_date,
+                iys_consent=iys,
+                notes=combined_notes,
+            )
+            if row_errors:
+                result.errors.append((i, "; ".join(row_errors) + " (kaydedildi)"))
+            result.added += 1
+        except Exception as e:
+            result.errors.append((i, f"İşlenemedi: {e}"))
+
+    return result
+
+
 def generate_template_csv(path: str | Path) -> None:
     """Örnek satırlı şablon CSV oluştur."""
     path = Path(path)

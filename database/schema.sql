@@ -119,3 +119,17 @@ INSERT OR IGNORE INTO services (name, duration_min, price) VALUES
     ('Manikur',          45, 250),
     ('Pedikur',          60, 300),
     ('Kas Sekillendirme',30, 150);
+
+-- Kullanıcı Hesapları (login sistemi)
+CREATE TABLE IF NOT EXISTS users (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    email           TEXT NOT NULL UNIQUE,
+    password_hash   TEXT NOT NULL,
+    full_name       TEXT NOT NULL,
+    role            TEXT DEFAULT 'user',        -- 'admin' / 'user'
+    is_active       INTEGER DEFAULT 1,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login      DATETIME
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

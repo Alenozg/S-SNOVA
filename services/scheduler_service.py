@@ -74,7 +74,9 @@ def send_birthday_messages() -> None:
             return
 
         log.info("Dogum gunu: %d musteri bulundu.", len(customers))
-        template = config.MESSAGE_TEMPLATES["birthday"]
+        from database.db_manager import get_setting
+        _db_bday = get_setting("birthday_template", "")
+        template = _db_bday if _db_bday.strip() else config.MESSAGE_TEMPLATES["birthday"]
 
         for c in customers:
             msg = template.format(name=c.first_name, salon=config.SALON_NAME)

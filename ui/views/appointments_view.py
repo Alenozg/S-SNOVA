@@ -1511,8 +1511,36 @@ class AppointmentsView:
                     appointment_service.update_appointment(payload)
                     msg = "Randevu güncellendi."
                 else:
-                    appointment_service.create_appointment(payload)
+                    new_id = appointment_service.create_appointment(payload)
                     msg = "Randevu oluşturuldu."
+                    # Onay SMS'i gönder
+                    try:
+                        from services import sms_service
+                        from database.db_manager import get_setting
+                        from services import customer_service as _cs
+                        _cust = _cs.get_customer(cust_id)
+                        if _cust and _cust.phone:
+                            _tpl = get_setting(
+                                "confirmation_template",
+                                "Merhaba {name}, {date} tarihli saat {time} randevunuz olusturulmustur. {salon}",
+                            )
+                            _sms = _tpl.format(
+                                name=_cust.first_name,
+                                date=dt.strftime("%d.%m.%Y"),
+                                time=dt.strftime("%H:%M"),
+                                salon=config.SALON_NAME,
+                            )
+                            sms_service.send_sms(
+                                phone=_cust.phone,
+                                message=_sms,
+                                customer_id=cust_id,
+                                appointment_id=new_id,
+                                sms_type="reminder",
+                            )
+                            msg += " Onay SMS'i gönderildi."
+                    except Exception as _sms_err:
+                        import logging as _log
+                        _log.getLogger(__name__).warning("Onay SMS hatasi: %s", _sms_err)
 
                 self.page.dialog.open = False
                 self.page.update()

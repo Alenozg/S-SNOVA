@@ -218,6 +218,20 @@ if _USE_PG:
                     'Merhaba {name}, yarin {date} saat {time} randevunuzu hatirlatmak isteriz. Gorusmek uzere. {salon}'
                 )
                 ON CONFLICT (key) DO NOTHING;
+
+                INSERT INTO app_settings (key, value)
+                VALUES (
+                    'confirmation_template',
+                    'Merhaba {name}, {date} tarihli saat {time} randevunuz olusturulmustur. Gorusmek uzere. {salon}'
+                )
+                ON CONFLICT (key) DO NOTHING;
+
+                INSERT INTO app_settings (key, value)
+                VALUES (
+                    'birthday_template',
+                    'Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}'
+                )
+                ON CONFLICT (key) DO NOTHING;
             """)
             conn.commit()
             log.info("PostgreSQL şeması hazır.")
@@ -346,11 +360,17 @@ else:
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )""")
         conn.commit()
-        # Varsayılan hatırlatma şablonunu ekle (yoksa)
-        cur.execute("""INSERT OR IGNORE INTO app_settings (key, value) VALUES (
-            'reminder_template',
-            'Merhaba {name}, yarin {time} saat {time} randevunuzu hatirlatmak isteriz. Gorusmek uzere. {salon}'
-        )""")
+        # Varsayılan şablonları ekle (yoksa)
+        defaults = [
+            ('reminder_template',
+             'Merhaba {name}, yarin {date} saat {time} randevunuzu hatirlatmak isteriz. Gorusmek uzere. {salon}'),
+            ('confirmation_template',
+             'Merhaba {name}, {date} tarihli saat {time} randevunuz olusturulmustur. Gorusmek uzere. {salon}'),
+            ('birthday_template',
+             'Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}'),
+        ]
+        for k, v in defaults:
+            cur.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)", (k, v))
         conn.commit()
 
 

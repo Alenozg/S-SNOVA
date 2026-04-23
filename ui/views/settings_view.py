@@ -208,83 +208,95 @@ def build(page: ft.Page) -> ft.Control:
         padding=ft.padding.only(bottom=28),
     )
 
-    # ── Mesaj Şablonları Kartı ───────────────────────────────────────
-    DEFAULT_REMINDER = (
-        "Merhaba {name}, yarin {time} saat {time} randevunuzu hatirlatmak "
-        "isteriz. Gorusmek uzere. {salon}"
+    # ── Mesaj Şablonları ─────────────────────────────────────────────
+    VARS_HINT = (
+        "{name} = müşteri adı  •  {date} = tarih  •  {time} = saat  •  "
+        "{service} = hizmet  •  {salon} = salon adı"
     )
-    current_tpl = get_setting("reminder_template", DEFAULT_REMINDER)
 
-    tpl_field = ft.TextField(
-        value=current_tpl,
-        multiline=True, min_lines=3, max_lines=6,
-        border_color=theme.DIVIDER,
-        focused_border_color=theme.ACCENT,
-        bgcolor=theme.SURFACE, border_radius=2,
-        text_style=ft.TextStyle(color=theme.TEXT, size=13),
-        label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
-        content_padding=ft.padding.symmetric(horizontal=14, vertical=12),
-    )
-    tpl_save_msg = ft.Text("", size=12, color=theme.SUCCESS)
+    def _template_card(title: str, icon: str, db_key: str, default: str) -> ft.Container:
+        """Yeniden kullanılabilir şablon düzenleme kartı."""
+        field = ft.TextField(
+            value=get_setting(db_key, default),
+            multiline=True, min_lines=3, max_lines=6,
+            border_color=theme.DIVIDER,
+            focused_border_color=theme.ACCENT,
+            bgcolor=theme.SURFACE, border_radius=2,
+            text_style=ft.TextStyle(color=theme.TEXT, size=13),
+            label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
+            content_padding=ft.padding.symmetric(horizontal=14, vertical=12),
+        )
+        save_msg = ft.Text("", size=12, color=theme.SUCCESS)
 
-    def save_template(e):
-        val = (tpl_field.value or "").strip()
-        if not val:
-            tpl_save_msg.value = "Şablon boş olamaz."
-            tpl_save_msg.color = theme.ERROR
-        else:
-            set_setting("reminder_template", val)
-            tpl_save_msg.value = "✓ Kaydedildi."
-            tpl_save_msg.color = theme.SUCCESS
-        tpl_save_msg.update()
+        def on_save(e):
+            val = (field.value or "").strip()
+            if not val:
+                save_msg.value = "Şablon boş olamaz."
+                save_msg.color = theme.ERROR
+            else:
+                set_setting(db_key, val)
+                save_msg.value = "✓ Kaydedildi."
+                save_msg.color = theme.SUCCESS
+            save_msg.update()
 
-    template_card = theme.card(
-        ft.Column(
-            [
-                ft.Row(
-                    [
-                        ft.Icon(ft.icons.EDIT_NOTIFICATIONS_OUTLINED, size=18,
-                                color=theme.ACCENT),
-                        theme.h3("Randevu Hatırlatma Mesajı"),
-                    ],
-                    spacing=8,
-                ),
-                ft.Container(height=8),
-                ft.Container(
-                    content=ft.Row(
+        return theme.card(
+            ft.Column(
+                [
+                    ft.Row(
+                        [ft.Icon(icon, size=18, color=theme.ACCENT),
+                         theme.h3(title)],
+                        spacing=8,
+                    ),
+                    ft.Container(height=8),
+                    ft.Container(
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.icons.INFO_OUTLINE, size=13,
+                                        color=theme.TEXT_MUTED),
+                                ft.Text(VARS_HINT, size=11, color=theme.TEXT_MUTED,
+                                        expand=True, no_wrap=False),
+                            ],
+                            spacing=8,
+                            vertical_alignment=ft.CrossAxisAlignment.START,
+                        ),
+                        padding=10, bgcolor=theme.SURFACE_ALT, border_radius=2,
+                    ),
+                    ft.Container(height=10),
+                    field,
+                    ft.Container(height=8),
+                    ft.Row(
                         [
-                            ft.Icon(ft.icons.INFO_OUTLINE, size=13,
-                                    color=theme.TEXT_MUTED),
-                            ft.Text(
-                                "Kullanılabilir değişkenler:  {name} = müşteri adı  •  "
-                                "{date} = randevu tarihi  •  {time} = randevu saati  •  "
-                                "{service} = hizmet adı  •  {salon} = salon adı",
-                                size=11, color=theme.TEXT_MUTED, expand=True,
-                                no_wrap=False,
+                            save_msg,
+                            ft.Container(expand=True),
+                            theme.primary_button(
+                                "Kaydet", icon=ft.icons.SAVE_OUTLINED,
+                                on_click=on_save,
                             ),
                         ],
-                        spacing=8,
-                        vertical_alignment=ft.CrossAxisAlignment.START,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     ),
-                    padding=10, bgcolor=theme.SURFACE_ALT, border_radius=2,
-                ),
-                ft.Container(height=10),
-                tpl_field,
-                ft.Container(height=8),
-                ft.Row(
-                    [
-                        tpl_save_msg,
-                        ft.Container(expand=True),
-                        theme.primary_button(
-                            "Kaydet", icon=ft.icons.SAVE_OUTLINED,
-                            on_click=save_template,
-                        ),
-                    ],
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                ),
-            ],
-            spacing=0,
+                ],
+                spacing=0,
+            )
         )
+
+    template_card = _template_card(
+        "Randevu Hatırlatma Mesajı",
+        ft.icons.EDIT_NOTIFICATIONS_OUTLINED,
+        "reminder_template",
+        "Merhaba {name}, yarin {date} saat {time} randevunuzu hatirlatmak isteriz. {salon}",
+    )
+    confirm_card = _template_card(
+        "Randevu Onay Mesajı  (randevu oluşturulduğunda anında gönderilir)",
+        ft.icons.MARK_EMAIL_READ_OUTLINED,
+        "confirmation_template",
+        "Merhaba {name}, {date} tarihli saat {time} randevunuz olusturulmustur. {salon}",
+    )
+    birthday_card = _template_card(
+        "Doğum Günü Mesajı",
+        ft.icons.CAKE_OUTLINED,
+        "birthday_template",
+        "Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}",
     )
 
     return ft.Column(
@@ -293,6 +305,10 @@ def build(page: ft.Page) -> ft.Control:
             general_card,
             ft.Container(height=16),
             template_card,
+            ft.Container(height=16),
+            confirm_card,
+            ft.Container(height=16),
+            birthday_card,
             ft.Container(height=16),
             storage_card,
             ft.Container(height=16),

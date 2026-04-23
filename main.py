@@ -41,6 +41,7 @@ def main(page: ft.Page) -> None:
     page.title = config.APP_NAME
     page.bgcolor = theme.BG
     page.padding = 0
+    page.theme_mode = ft.ThemeMode.LIGHT   # karanlık mod kapalı — tema renkleri korunsun
 
     if not IS_WEB:
         try:

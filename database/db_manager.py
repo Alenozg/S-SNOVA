@@ -205,6 +205,19 @@ if _USE_PG:
                     last_login    TIMESTAMP
                 );
                 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    key        TEXT PRIMARY KEY,
+                    value      TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                INSERT INTO app_settings (key, value)
+                VALUES (
+                    'reminder_template',
+                    'Merhaba {name}, yarin {date} saat {time} randevunuzu hatirlatmak isteriz. Gorusmek uzere. {salon}'
+                )
+                ON CONFLICT (key) DO NOTHING;
             """)
             conn.commit()
             log.info("PostgreSQL şeması hazır.")
@@ -349,11 +362,21 @@ def get_setting(key: str, default: str = "") -> str:
 
 
 def set_setting(key: str, value: str) -> None:
-    """Ayarı ekler veya günceller."""
-    execute(
-        """INSERT INTO app_settings (key, value, updated_at)
-           VALUES (?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(key) DO UPDATE SET value=excluded.value,
-               updated_at=CURRENT_TIMESTAMP""",
-        (key, value),
-    )
+    """Ayarı ekler veya günceller (SQLite ve PostgreSQL uyumlu)."""
+    if _USE_PG:
+        # PostgreSQL: INSERT ... ON CONFLICT DO UPDATE
+        execute(
+            """INSERT INTO app_settings (key, value, updated_at)
+               VALUES (%s, %s, CURRENT_TIMESTAMP)
+               ON CONFLICT (key) DO UPDATE
+               SET value = EXCLUDED.value,
+                   updated_at = CURRENT_TIMESTAMP""".replace("%s", "?"),
+            (key, value),
+        )
+    else:
+        # SQLite: INSERT OR REPLACE
+        execute(
+            """INSERT OR REPLACE INTO app_settings (key, value, updated_at)
+               VALUES (?, ?, CURRENT_TIMESTAMP)""",
+            (key, value),
+        )

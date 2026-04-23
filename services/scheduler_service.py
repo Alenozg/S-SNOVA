@@ -39,7 +39,10 @@ def remind_upcoming_appointments() -> None:
             return
 
         log.info("Hatirlatma: %d randevu bulundu.", len(pending))
-        template = config.MESSAGE_TEMPLATES["appointment_reminder"]
+        # Önce DB'den şablon oku; yoksa config'e düş
+        from database.db_manager import get_setting
+        _db_tpl = get_setting("reminder_template", "")
+        template = _db_tpl if _db_tpl.strip() else config.MESSAGE_TEMPLATES["appointment_reminder"]
 
         for appt in pending:
             when = appt.appointment_at

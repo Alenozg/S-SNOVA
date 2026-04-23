@@ -497,6 +497,12 @@ class CustomersView:
                         content=ft.Row(
                             [
                                 ft.IconButton(
+                                    ft.icons.SMS_OUTLINED, icon_size=16,
+                                    icon_color=theme.ACCENT,
+                                    on_click=lambda e, cid=c.id: self.send_single_sms(cid),
+                                    tooltip="SMS Gönder",
+                                ),
+                                ft.IconButton(
                                     ft.icons.EDIT_OUTLINED, icon_size=16,
                                     icon_color=theme.INVALID_TXT if is_invalid else theme.TEXT_MUTED,
                                     on_click=lambda e, cid=c.id: self.open_form(cid),
@@ -511,7 +517,7 @@ class CustomersView:
                             ],
                             spacing=0,
                         ),
-                        width=100,
+                        width=130,
                     ),
                 ],
                 spacing=16,
@@ -521,6 +527,102 @@ class CustomersView:
             bgcolor=row_bg,
             border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
         )
+
+    # ---------------------------------------------------------- single SMS
+    def send_single_sms(self, customer_id: int) -> None:
+        """Tek bir müşteriye özel SMS gönder."""
+        from services import sms_service
+        c = customer_service.get_customer(customer_id)
+        if not c:
+            return
+
+        message_field = theme.text_field(
+            "Mesaj", multiline=True,
+            hint="Merhaba {name}, ...  ({name} = müşteri adı)",
+        )
+        char_counter = theme.caption("0 karakter • 1 SMS • ~0.40 TL")
+        error_text = ft.Text("", color=theme.ERROR, size=12)
+
+        def on_msg_change(e):
+            length = len(message_field.value or "")
+            segs = max(1, -(-length // 150))
+            cost = segs * 0.40
+            char_counter.value = f"{length} karakter • {segs} SMS • ~{cost:.2f} TL"
+            char_counter.update()
+
+        message_field.on_change = on_msg_change
+
+        def send(e):
+            msg = (message_field.value or "").strip()
+            if not msg:
+                error_text.value = "Mesaj boş olamaz."
+                error_text.update()
+                return
+            if not c.phone:
+                error_text.value = "Bu müşterinin telefon numarası yok."
+                error_text.update()
+                return
+            try:
+                result = sms_service.send_sms(
+                    phone=c.phone,
+                    message=msg.replace("{name}", c.first_name),
+                    customer_id=c.id,
+                    sms_type="campaign",
+                )
+                self.page.dialog.open = False
+                self.page.update()
+                status = "✓ Gönderildi" if result.success else "✗ Gönderilemedi"
+                color  = theme.SUCCESS if result.success else theme.ERROR
+                self.page.snack_bar = ft.SnackBar(
+                    ft.Text(f"{c.full_name} — {status}"),
+                    bgcolor=color,
+                )
+                self.page.snack_bar.open = True
+                self.page.update()
+            except Exception as ex:
+                error_text.value = f"Hata: {ex}"
+                error_text.update()
+
+        dlg = ft.AlertDialog(
+            modal=True, bgcolor=theme.SURFACE,
+            title=ft.Text(
+                f"{c.full_name} – SMS Gönder",
+                color=theme.TEXT, weight=ft.FontWeight.W_400,
+                font_family=theme.FONT_FAMILY_DISPLAY, size=20,
+            ),
+            content=ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Container(
+                            content=ft.Row(
+                                [
+                                    ft.Icon(ft.icons.PHONE_OUTLINED, size=14,
+                                            color=theme.TEXT_MUTED),
+                                    theme.body(c.display_phone or "—", muted=True),
+                                ],
+                                spacing=8,
+                            ),
+                            padding=ft.padding.symmetric(vertical=4),
+                        ),
+                        message_field,
+                        char_counter,
+                        error_text,
+                    ],
+                    tight=True, spacing=8,
+                ),
+                width=480,
+            ),
+            actions=[
+                theme.ghost_button("Vazgeç",
+                                   on_click=lambda e: _dlg_close(self.page)),
+                theme.primary_button("Gönder",
+                                     icon=ft.icons.SEND, on_click=send),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     # ---------------------------------------------------------- profile
     def open_profile(self, customer_id: int) -> None:

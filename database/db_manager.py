@@ -326,3 +326,34 @@ else:
         conn.commit()
         cur.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         conn.commit()
+        # app_settings key-value tablosu (mesaj şablonları vb.)
+        cur.execute("""CREATE TABLE IF NOT EXISTS app_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )""")
+        conn.commit()
+        # Varsayılan hatırlatma şablonunu ekle (yoksa)
+        cur.execute("""INSERT OR IGNORE INTO app_settings (key, value) VALUES (
+            'reminder_template',
+            'Merhaba {name}, yarin {time} saat {time} randevunuzu hatirlatmak isteriz. Gorusmek uzere. {salon}'
+        )""")
+        conn.commit()
+
+
+# ── app_settings yardımcıları ────────────────────────────────────────────────
+def get_setting(key: str, default: str = "") -> str:
+    """Ayar değerini döner; yoksa default."""
+    row = fetch_one("SELECT value FROM app_settings WHERE key=?", (key,))
+    return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    """Ayarı ekler veya günceller."""
+    execute(
+        """INSERT INTO app_settings (key, value, updated_at)
+           VALUES (?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(key) DO UPDATE SET value=excluded.value,
+               updated_at=CURRENT_TIMESTAMP""",
+        (key, value),
+    )

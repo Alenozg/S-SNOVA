@@ -87,37 +87,74 @@ class CustomersView:
             self.page.overlay.append(self.template_picker)
             self._pickers_mounted = True
 
-        header = ft.Row(
-            [
-                ft.Column(
-                    [theme.caption("CRM"), theme.h1("Müşteriler")],
-                    spacing=4, expand=True,
-                ),
-                ft.Row(
-                    [
-                        theme.ghost_button(
-                            "Şablon", icon=ft.icons.DESCRIPTION_OUTLINED,
-                            on_click=lambda e: self._save_template(),
-                        ),
-                        theme.ghost_button(
-                            "Dışa Aktar", icon=ft.icons.FILE_DOWNLOAD_OUTLINED,
-                            on_click=lambda e: self._open_export(),
-                        ),
-                        theme.ghost_button(
-                            "İçe Aktar", icon=ft.icons.FILE_UPLOAD_OUTLINED,
-                            on_click=lambda e: self._open_import(),
-                        ),
-                        theme.primary_button(
-                            "Yeni Müşteri", icon=ft.icons.ADD,
-                            on_click=lambda e: self.open_form(),
-                        ),
-                    ],
-                    spacing=8,
-                ),
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.END,
-        )
+        is_mobile = (self.page.width or 1200) < 768
+        if is_mobile:
+            # Mobilde sadece ikonlar
+            header = ft.Row(
+                [
+                    ft.Column(
+                        [theme.caption("CRM"), theme.h1("Müşteriler")],
+                        spacing=4, expand=True,
+                    ),
+                    ft.Row(
+                        [
+                            ft.IconButton(ft.icons.DESCRIPTION_OUTLINED,
+                                icon_color=theme.TEXT_MUTED, icon_size=20,
+                                tooltip="Şablon",
+                                on_click=lambda e: self._save_template()),
+                            ft.IconButton(ft.icons.FILE_DOWNLOAD_OUTLINED,
+                                icon_color=theme.TEXT_MUTED, icon_size=20,
+                                tooltip="Dışa Aktar",
+                                on_click=lambda e: self._open_export()),
+                            ft.IconButton(ft.icons.FILE_UPLOAD_OUTLINED,
+                                icon_color=theme.TEXT_MUTED, icon_size=20,
+                                tooltip="İçe Aktar",
+                                on_click=lambda e: self._open_import()),
+                            ft.FloatingActionButton(
+                                icon=ft.icons.ADD,
+                                bgcolor=theme.ACCENT,
+                                mini=True,
+                                on_click=lambda e: self.open_form(),
+                            ),
+                        ],
+                        spacing=0,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            )
+        else:
+            header = ft.Row(
+                [
+                    ft.Column(
+                        [theme.caption("CRM"), theme.h1("Müşteriler")],
+                        spacing=4, expand=True,
+                    ),
+                    ft.Row(
+                        [
+                            theme.ghost_button(
+                                "Şablon", icon=ft.icons.DESCRIPTION_OUTLINED,
+                                on_click=lambda e: self._save_template(),
+                            ),
+                            theme.ghost_button(
+                                "Dışa Aktar", icon=ft.icons.FILE_DOWNLOAD_OUTLINED,
+                                on_click=lambda e: self._open_export(),
+                            ),
+                            theme.ghost_button(
+                                "İçe Aktar", icon=ft.icons.FILE_UPLOAD_OUTLINED,
+                                on_click=lambda e: self._open_import(),
+                            ),
+                            theme.primary_button(
+                                "Yeni Müşteri", icon=ft.icons.ADD,
+                                on_click=lambda e: self.open_form(),
+                            ),
+                        ],
+                        spacing=8,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.END,
+            )
 
         # Eksik/hatalı kayıt sayısını banner olarak göster (varsa)
         invalid_count = customer_service.count_invalid()
@@ -448,6 +485,9 @@ class CustomersView:
         )
 
     def _customer_row(self, c: Customer) -> ft.Container:
+        is_mobile = (self.page.width or 1200) < 768
+        if is_mobile:
+            return self._customer_row_mobile(c)
         is_invalid = not c.is_valid
 
         iys_icon = ft.Icon(
@@ -580,6 +620,57 @@ class CustomersView:
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
             padding=ft.padding.only(top=12, bottom=12, right=24),
+            bgcolor=row_bg,
+            border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
+        )
+
+    def _customer_row_mobile(self, c: Customer) -> ft.Container:
+        """Mobil için kompakt müşteri satırı."""
+        is_invalid = not c.is_valid
+        is_selected = c.id in self._selected_ids
+        row_bg = "#F0EBE3" if is_selected else (theme.INVALID_BG if is_invalid else None)
+
+        return ft.Container(
+            content=ft.Row(
+                [
+                    ft.Container(
+                        ft.Checkbox(
+                            value=is_selected,
+                            check_color=theme.SURFACE, fill_color=theme.ACCENT,
+                            on_change=lambda e, cid=c.id: self._toggle_select(cid, bool(e.control.value)),
+                        ), width=40, alignment=ft.alignment.center_left,
+                    ),
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Row([
+                                    ft.Text(c.full_name, size=13,
+                                            weight=ft.FontWeight.W_500, color=theme.TEXT),
+                                    ft.Icon(ft.icons.WARNING_AMBER_OUTLINED, size=12,
+                                            color=theme.INVALID_TXT) if is_invalid else ft.Container(),
+                                ], spacing=4),
+                                ft.Text(c.display_phone or "—", size=11, color=theme.TEXT_MUTED),
+                            ], spacing=2,
+                        ),
+                        expand=True,
+                        ink=True,
+                        on_click=lambda e, cid=c.id: self.open_profile(cid),
+                    ),
+                    ft.Row([
+                        ft.IconButton(ft.icons.SMS_OUTLINED, icon_size=16,
+                                      icon_color=theme.ACCENT,
+                                      on_click=lambda e, cid=c.id: self.send_single_sms(cid),
+                                      tooltip="SMS"),
+                        ft.IconButton(ft.icons.EDIT_OUTLINED, icon_size=16,
+                                      icon_color=theme.TEXT_MUTED,
+                                      on_click=lambda e, cid=c.id: self.open_form(cid),
+                                      tooltip="Düzenle"),
+                    ], spacing=0),
+                ],
+                spacing=8,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=ft.padding.symmetric(horizontal=12, vertical=10),
             bgcolor=row_bg,
             border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
         )

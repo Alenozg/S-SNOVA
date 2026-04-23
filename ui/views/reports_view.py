@@ -132,12 +132,17 @@ def build(page: ft.Page) -> ft.Control:
             expand=True,
         )
 
-    summary_row = ft.Row([
+    is_mobile = (page.width or 1200) < 768
+    _summary_cards = [
         big_card("BU AY GELİR",   _fmt_tl(this_month),  diff_txt, diff_color),
         big_card("GEÇEN AY GELİR", _fmt_tl(last_month), "karşılaştırma"),
         big_card("BU YIL TOPLAM", _fmt_tl(this_year),   "tamamlanan randevular"),
         big_card("BU AY RANDEVU", str(appt_month),       "toplam kayıt"),
-    ], spacing=12)
+    ]
+    if is_mobile:
+        summary_row = ft.Column(_summary_cards, spacing=10)
+    else:
+        summary_row = ft.Row(_summary_cards, spacing=12)
 
     # ── Durum dağılımı ────────────────────────────────────────────
     total_appts = sum(status_breakdown.values()) or 1
@@ -327,6 +332,12 @@ def build(page: ft.Page) -> ft.Control:
         ft.Column(svc_rows, spacing=0),
     ], spacing=0), padding=0)
 
+    _pill_row = ft.Column(
+        [ft.Container(c) for c in status_pills], spacing=8
+    ) if is_mobile else ft.Row(
+        [ft.Container(c, expand=True) for c in status_pills], spacing=12
+    )
+
     return ft.Column(
         [
             ft.Container(
@@ -338,10 +349,7 @@ def build(page: ft.Page) -> ft.Control:
             ),
             summary_row,
             ft.Container(height=12),
-            ft.Row(
-                [ft.Container(c, expand=True) for c in status_pills],
-                spacing=12,
-            ),
+            _pill_row,
             ft.Container(height=16),
             revenue_card,
             ft.Container(height=16),

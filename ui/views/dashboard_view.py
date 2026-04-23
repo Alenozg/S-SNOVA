@@ -87,24 +87,26 @@ def build(page: ft.Page) -> ft.Control:
     today_appts = [a for a in week_appts if a.appointment_at and a.appointment_at.date() == today]
     upcoming    = [a for a in week_appts if a.appointment_at and a.appointment_at.date() > today]
 
-    # ── Stat kartları ────────────────────────────────────────────
-    stats_row = ft.Row(
-        [
-            ft.Container(_stat_card("Toplam Müşteri", str(cust["total"]),
-                                    f"{cust['with_birthday']} doğum günü kayıtlı"),
-                         expand=True),
-            ft.Container(_stat_card("İYS Onaylı", str(cust["iys"]),
-                                    "SMS gönderimine uygun"),
-                         expand=True),
-            ft.Container(_stat_card("Bugün", str(len(today_appts)),
-                                    "randevu var"),
-                         expand=True),
-            ft.Container(_stat_card("Bu Hafta", str(len(week_appts)),
-                                    f"{len(upcoming)} önünüzde"),
-                         expand=True),
-        ],
-        spacing=16,
-    )
+    # ── Stat kartları (mobilde dikey) ────────────────────────────
+    is_mobile = (page.width or 1200) < 768
+    cards = [
+        ft.Container(_stat_card("Toplam Müşteri", str(cust["total"]),
+                                f"{cust['with_birthday']} doğum günü kayıtlı"),
+                     expand=not is_mobile),
+        ft.Container(_stat_card("İYS Onaylı", str(cust["iys"]),
+                                "SMS gönderimine uygun"),
+                     expand=not is_mobile),
+        ft.Container(_stat_card("Bugün", str(len(today_appts)),
+                                "randevu var"),
+                     expand=not is_mobile),
+        ft.Container(_stat_card("Bu Hafta", str(len(week_appts)),
+                                f"{len(upcoming)} önünüzde"),
+                     expand=not is_mobile),
+    ]
+    if is_mobile:
+        stats_row = ft.Column(cards, spacing=10)
+    else:
+        stats_row = ft.Row(cards, spacing=16)
 
     # ── Bugünün listesi ──────────────────────────────────────────
     if today_appts:

@@ -62,15 +62,25 @@ def main(page: ft.Page) -> None:
 
     def load_app(user: dict):
         """Giriş başarılıysa ana uygulamayı yükle."""
-        page.session.set(SESSION_KEY, user)
+        try:
+            page.session.set(SESSION_KEY, user)
+        except Exception:
+            pass
         page.controls.clear()
+        page.appbar = None
+        page.drawer = None
+        page.update()
         app = SalonApp(page, current_user=user)
         app.mount()
 
     def show_login():
         page.controls.clear()
+        page.appbar = None
+        page.drawer = None
+        page.update()
         login_ctrl = build_login(page, on_success=load_app)
         page.add(login_ctrl)
+        page.update()
 
     # Oturum yoksa login göster
     show_login()

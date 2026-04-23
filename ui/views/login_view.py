@@ -1,5 +1,5 @@
 """
-Giriş ekranı — mobil uyumlu, kayıt özelliği yok.
+Giriş ekranı — mobil + masaüstü uyumlu.
 """
 import flet as ft
 from ui import theme
@@ -7,7 +7,6 @@ from services import auth_service
 
 
 def build_login(page: ft.Page, on_success) -> ft.Control:
-    is_mobile = (page.width or 1200) < 768
 
     f_user = ft.TextField(
         label="Kullanıcı Adı",
@@ -18,7 +17,6 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         text_style=ft.TextStyle(color=theme.TEXT, size=14),
         label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
-        autofocus=not is_mobile,  # mobilde autofocus klavyeyi tetikler
     )
     f_pass = ft.TextField(
         label="Şifre",
@@ -32,8 +30,11 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
     )
-    err_text = ft.Text("", color=theme.ERROR, size=13,
-                       text_align=ft.TextAlign.CENTER)
+    err_text = ft.Text(
+        "", color=theme.ERROR, size=13,
+        text_align=ft.TextAlign.CENTER,
+    )
+
     btn_login = ft.ElevatedButton(
         text="Giriş Yap",
         style=ft.ButtonStyle(
@@ -41,41 +42,63 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
             color="#FFFFFF",
             shape=ft.RoundedRectangleBorder(radius=2),
             padding=ft.padding.symmetric(horizontal=24, vertical=18),
-            text_style=ft.TextStyle(weight=ft.FontWeight.W_400, size=13),
+            text_style=ft.TextStyle(weight=ft.FontWeight.W_400, size=14),
         ),
-        width=9999,  # tam genişlik — mobilde buton kaymasın
     )
 
     def submit(e=None):
         err_text.value = ""
+        try:
+            page.update()
+        except Exception:
+            pass
+
         username = (f_user.value or "").strip()
         password = (f_pass.value or "").strip()
 
         if not username or not password:
             err_text.value = "Kullanıcı adı ve şifre zorunludur."
-            page.update()
+            try:
+                page.update()
+            except Exception:
+                pass
             return
 
-        user = auth_service.login(username, password)
+        try:
+            user = auth_service.login(username, password)
+        except Exception as ex:
+            err_text.value = f"Bağlantı hatası: {ex}"
+            try:
+                page.update()
+            except Exception:
+                pass
+            return
+
         if user:
-            on_success(user)
+            try:
+                on_success(user)
+            except Exception as ex:
+                err_text.value = f"Yükleme hatası: {ex}"
+                try:
+                    page.update()
+                except Exception:
+                    pass
         else:
             err_text.value = "Kullanıcı adı veya şifre hatalı."
             f_pass.value = ""
-            page.update()
+            try:
+                page.update()
+            except Exception:
+                pass
 
     btn_login.on_click = submit
     f_user.on_submit   = submit
     f_pass.on_submit   = submit
 
-    # Mobilde padding küçük, kart tam genişlik
-    h_pad = 20 if is_mobile else 36
-    v_pad = 28 if is_mobile else 32
-
+    # Kart — sabit genişlik yok, padding ile responsive
     card = ft.Container(
         content=ft.Column(
             [
-                ft.Container(height=8),
                 ft.Text(
                     "Giriş Yap", size=26, weight=ft.FontWeight.W_300,
                     color=theme.TEXT, font_family=theme.FONT_FAMILY_DISPLAY,
@@ -88,50 +111,42 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
                 ),
                 ft.Container(height=24),
                 f_user,
-                ft.Container(height=8),
+                ft.Container(height=10),
                 f_pass,
-                ft.Container(height=4),
+                ft.Container(height=8),
                 err_text,
                 ft.Container(height=16),
-                btn_login,
+                ft.Row(
+                    [btn_login],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            tight=True, spacing=0,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+            tight=True,
+            spacing=0,
         ),
-        # Mobilde genişlik sınırı yok (ekran genişliğini kullan)
-        width=None if is_mobile else 380,
         bgcolor=theme.SURFACE,
         border=ft.border.all(1, theme.DIVIDER),
-        border_radius=8,
-        padding=ft.padding.symmetric(horizontal=h_pad, vertical=v_pad),
+        border_radius=10,
+        padding=ft.padding.symmetric(horizontal=28, vertical=32),
     )
 
-    # Mobilde kart tam ekran genişliğinde, ortada
-    if is_mobile:
-        return ft.Container(
-            content=ft.Column(
-                [
-                    ft.Container(expand=True),
-                    ft.Container(
-                        content=card,
-                        padding=ft.padding.symmetric(horizontal=16),
-                    ),
-                    ft.Container(expand=True),
-                ],
-                expand=True,
-            ),
-            expand=True,
-            bgcolor=theme.BG,
-        )
-
+    # Dış kapsayıcı: ortalar + scroll (mobil klavye için)
     return ft.Container(
         content=ft.Column(
-            [card],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            [
+                ft.Container(expand=True),
+                ft.Container(
+                    content=card,
+                    # Max genişlik 400, kenarlar 20px padding
+                    padding=ft.padding.symmetric(horizontal=20),
+                    alignment=ft.alignment.center,
+                ),
+                ft.Container(expand=True),
+            ],
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         ),
         expand=True,
         bgcolor=theme.BG,
-        alignment=ft.alignment.center,
     )

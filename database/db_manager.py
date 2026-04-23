@@ -357,26 +357,41 @@ else:
 # ── app_settings yardımcıları ────────────────────────────────────────────────
 def get_setting(key: str, default: str = "") -> str:
     """Ayar değerini döner; yoksa default."""
-    row = fetch_one("SELECT value FROM app_settings WHERE key=?", (key,))
-    return row["value"] if row else default
+    # execute() wrapper'ını atla: doğrudan cursor kullan
+    try:
+        with db_cursor() as cur:
+            if _USE_PG:
+                cur.execute("SELECT value FROM app_settings WHERE key=%s", (key,))
+            else:
+                cur.execute("SELECT value FROM app_settings WHERE key=?", (key,))
+            row = cur.fetchone()
+            if row:
+                return dict(row).get("value", default)
+    except Exception as e:
+        log.warning("get_setting hata (%s): %s", key, e)
+    return default
 
 
 def set_setting(key: str, value: str) -> None:
     """Ayarı ekler veya günceller (SQLite ve PostgreSQL uyumlu)."""
-    if _USE_PG:
-        # PostgreSQL: INSERT ... ON CONFLICT DO UPDATE
-        execute(
-            """INSERT INTO app_settings (key, value, updated_at)
-               VALUES (%s, %s, CURRENT_TIMESTAMP)
-               ON CONFLICT (key) DO UPDATE
-               SET value = EXCLUDED.value,
-                   updated_at = CURRENT_TIMESTAMP""".replace("%s", "?"),
-            (key, value),
-        )
-    else:
-        # SQLite: INSERT OR REPLACE
-        execute(
-            """INSERT OR REPLACE INTO app_settings (key, value, updated_at)
-               VALUES (?, ?, CURRENT_TIMESTAMP)""",
-            (key, value),
-        )
+    # execute() wrapper RETURNING id ekler; app_settings'te id yok → direkt cursor
+    try:
+        with db_cursor(commit=True) as cur:
+            if _USE_PG:
+                cur.execute(
+                    """INSERT INTO app_settings (key, value, updated_at)
+                       VALUES (%s, %s, CURRENT_TIMESTAMP)
+                       ON CONFLICT (key) DO UPDATE
+                       SET value = EXCLUDED.value,
+                           updated_at = CURRENT_TIMESTAMP""",
+                    (key, value),
+                )
+            else:
+                cur.execute(
+                    """INSERT OR REPLACE INTO app_settings (key, value, updated_at)
+                       VALUES (?, ?, CURRENT_TIMESTAMP)""",
+                    (key, value),
+                )
+    except Exception as e:
+        log.error("set_setting hata (%s): %s", key, e)
+        raise

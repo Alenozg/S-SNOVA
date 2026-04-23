@@ -42,11 +42,22 @@ class SmsProvider(ABC):
 # Mock (geliştirme)
 # -----------------------------------------------------------
 class MockProvider(SmsProvider):
-    """Gerçek SMS göndermez; konsola log yazar."""
+    """
+    Gerçek SMS göndermez.
+    SMS_PROVIDER=mock iken tüm gönderimler başarısız sayılır;
+    bu sayede UI gerçek durumu doğru gösterir.
+    Netgsm veya başka bir sağlayıcı yapılandırılana kadar aktif kalır.
+    """
 
     def send(self, phone: str, message: str) -> SmsResult:
-        log.info("[MOCK SMS] -> %s : %s", phone, message)
-        return SmsResult(success=True, provider_response="mock_ok")
+        log.warning(
+            "[MOCK] SMS gönderilemedi – sağlayıcı yapılandırılmamış. "
+            "Hedef: %s | Mesaj: %.60s", phone, message
+        )
+        return SmsResult(
+            success=False,
+            provider_response="sms_provider_not_configured",
+        )
 
 
 # -----------------------------------------------------------

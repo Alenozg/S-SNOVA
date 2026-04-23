@@ -13,6 +13,7 @@ def _dlg_close(page):
         pass
 
 
+import config
 from services import campaign_service, customer_service
 from ui import theme
 
@@ -55,9 +56,29 @@ class CampaignsView:
             padding=ft.padding.symmetric(vertical=20),
         )
 
+        provider_warning = ft.Container(visible=False)
+        if (config.SMS_PROVIDER or "mock").lower() == "mock":
+            provider_warning = ft.Container(
+                content=ft.Row(
+                    [
+                        ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, size=16, color="#b45309"),
+                        ft.Text(
+                            "SMS sağlayıcısı yapılandırılmamış (mock mod aktif). "
+                            "Mesajlar iletilmeyecek — Ayarlar > SMS bölümünden Netgsm bilgilerini girin.",
+                            size=12, color="#92400e",
+                        ),
+                    ],
+                    spacing=8,
+                ),
+                padding=ft.padding.symmetric(horizontal=16, vertical=12),
+                bgcolor="#fef3c7",
+                border=ft.border.all(1, "#fcd34d"),
+                border_radius=6,
+            )
+
         self.refresh()
         return ft.Column(
-            [header, hint, theme.card(self.list_container, padding=0)],
+            [header, hint, provider_warning, theme.card(self.list_container, padding=0)],
             scroll=ft.ScrollMode.AUTO, expand=True,
         )
 
@@ -153,8 +174,10 @@ class CampaignsView:
 
         def on_message_change(e):
             length = len(message.value or "")
-            segments = max(1, -(-length // 160))
-            char_counter.value = f"{length} karakter • {segments} SMS"
+            # Türkçe karakterli mesaj: 1 SMS = 150 karakter
+            segments = max(1, -(-length // 150))
+            cost = segments * 0.40
+            char_counter.value = f"{length} karakter • {segments} SMS • ~{cost:.2f} TL"
             char_counter.update()
 
         message.on_change = on_message_change

@@ -28,6 +28,7 @@ def _fmt_cost(cost: float) -> str:
 
 
 def build(page: ft.Page) -> ft.Control:
+    is_mob = (page.width or 1200) < 768
     logs = fetch_all(
         """SELECT l.*, c.first_name || ' ' || c.last_name AS customer_name
            FROM sms_logs l
@@ -78,19 +79,19 @@ def build(page: ft.Page) -> ft.Control:
             expand=True,
         )
 
-    summary_row = ft.Row(
-        [
-            summary_card("Toplam SMS", str(total_sms),
-                         ft.icons.SEND_OUTLINED, theme.ACCENT),
-            summary_card("Başarıyla Gönderildi", str(sent_count),
-                         ft.icons.CHECK_CIRCLE_OUTLINE, theme.SUCCESS),
-            summary_card("Başarısız", str(total_sms - sent_count),
-                         ft.icons.ERROR_OUTLINE, theme.ERROR),
-            summary_card("Toplam Maliyet", _fmt_cost(total_cost),
-                         ft.icons.CURRENCY_LIRA_OUTLINED, theme.WARN),
-        ],
-        spacing=12,
-    )
+    _sum_cards = [
+        summary_card("Toplam SMS", str(total_sms), ft.icons.SEND_OUTLINED, theme.ACCENT),
+        summary_card("Gönderildi", str(sent_count), ft.icons.CHECK_CIRCLE_OUTLINE, theme.SUCCESS),
+        summary_card("Başarısız", str(total_sms - sent_count), ft.icons.ERROR_OUTLINE, theme.ERROR),
+        summary_card("Maliyet", _fmt_cost(total_cost), ft.icons.CURRENCY_LIRA_OUTLINED, theme.WARN),
+    ]
+    if is_mob:
+        summary_row = ft.Column([
+            ft.Row(_sum_cards[:2], spacing=8),
+            ft.Row(_sum_cards[2:], spacing=8),
+        ], spacing=8)
+    else:
+        summary_row = ft.Row(_sum_cards, spacing=12)
 
     # ── Tablo başlık ─────────────────────────────────────────────
     header = ft.Container(

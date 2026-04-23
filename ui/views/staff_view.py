@@ -28,16 +28,22 @@ class StaffView:
             on_click=self._on_new_clicked,
         )
 
+        is_mob = (self.page.width or 1200) < 768
         header = ft.Row(
             [
                 ft.Column(
                     [theme.caption("EKİP"), theme.h1("Personel")],
                     spacing=4, expand=True,
                 ),
-                new_button,
+                ft.IconButton(
+                    ft.icons.ADD, icon_color=theme.SURFACE,
+                    bgcolor=theme.ACCENT, icon_size=20,
+                    on_click=self._on_new_clicked,
+                    tooltip="Yeni Personel",
+                ) if is_mob else new_button,
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.END,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
         info = ft.Container(
@@ -86,8 +92,9 @@ class StaffView:
                 padding=40, alignment=ft.alignment.center,
             ))
         else:
+            is_mob = (self.page.width or 1200) < 768
             for s in staff_list:
-                controls.append(self._staff_row_mobile(s) if is_mobile else self._staff_row(s))
+                controls.append(self._staff_row_mobile(s) if is_mob else self._staff_row(s))
 
         self.list_container.controls = controls
         if self.list_container.page:

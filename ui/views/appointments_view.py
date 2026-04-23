@@ -74,19 +74,25 @@ class AppointmentsView:
 
     # ---------------------------------------------------------- build
     def build(self) -> ft.Control:
+        _is_mob = (self.page.width or 1200) < 768
+        _add_btn = ft.IconButton(
+            ft.icons.ADD, icon_color=theme.SURFACE, bgcolor=theme.ACCENT,
+            icon_size=20, tooltip="Yeni Randevu",
+            on_click=lambda e: self.open_form(),
+        ) if _is_mob else theme.primary_button(
+            "Yeni Randevu", icon=ft.icons.ADD,
+            on_click=lambda e: self.open_form(),
+        )
         header = ft.Row(
             [
                 ft.Column(
                     [theme.caption("AJANDA"), theme.h1("Randevular")],
                     spacing=4, expand=True,
                 ),
-                theme.primary_button(
-                    "Yeni Randevu", icon=ft.icons.ADD,
-                    on_click=lambda e: self.open_form(),
-                ),
+                _add_btn,
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.END,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
         self._rebuild_view_toggle()

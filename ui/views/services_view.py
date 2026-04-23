@@ -18,9 +18,13 @@ class ServicesView:
 
     # ==================================================================
     def build(self) -> ft.Control:
-        new_button = theme.primary_button(
-            "Yeni Hizmet",
-            icon=ft.icons.ADD,
+        _is_mob = (self.page.width or 1200) < 768
+        _add_btn = ft.IconButton(
+            ft.icons.ADD, icon_color=theme.SURFACE, bgcolor=theme.ACCENT,
+            icon_size=20, tooltip="Yeni Hizmet",
+            on_click=lambda e: self._open_dialog(edit_id=None),
+        ) if _is_mob else theme.primary_button(
+            "Yeni Hizmet", icon=ft.icons.ADD,
             on_click=lambda e: self._open_dialog(edit_id=None),
         )
 
@@ -30,10 +34,10 @@ class ServicesView:
                     [theme.caption("İŞLEMLER"), theme.h1("Hizmetler")],
                     spacing=4, expand=True,
                 ),
-                new_button,
+                _add_btn,
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.END,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
         info = ft.Container(

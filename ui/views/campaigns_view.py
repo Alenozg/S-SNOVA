@@ -32,7 +32,12 @@ class CampaignsView:
                     [theme.caption("PAZARLAMA"), theme.h1("Kampanyalar")],
                     spacing=4, expand=True,
                 ),
-                theme.primary_button(
+                ft.IconButton(
+                    ft.icons.SEND_OUTLINED,
+                    icon_color=theme.SURFACE, bgcolor=theme.ACCENT,
+                    icon_size=18, tooltip="Yeni Kampanya",
+                    on_click=lambda e: self.open_form(),
+                ) if (self.page.width or 1200) < 768 else theme.primary_button(
                     "Yeni Kampanya", icon=ft.icons.SEND_OUTLINED,
                     on_click=lambda e: self.open_form(),
                 ),

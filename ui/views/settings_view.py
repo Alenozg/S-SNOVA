@@ -298,6 +298,12 @@ def build(page: ft.Page) -> ft.Control:
         "birthday_template",
         "Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}",
     )
+    cancel_card = _template_card(
+        "Randevu İptal Mesajı  (iptal edildiğinde anında gönderilir)",
+        ft.icons.CANCEL_OUTLINED,
+        "cancellation_template",
+        "Merhaba {name}, {date} tarihli saat {time} randevunuz iptal edilmistir. Bilginize. {salon}",
+    )
 
     return ft.Column(
         [
@@ -309,6 +315,8 @@ def build(page: ft.Page) -> ft.Control:
             confirm_card,
             ft.Container(height=16),
             birthday_card,
+            ft.Container(height=16),
+            cancel_card,
             ft.Container(height=16),
             storage_card,
             ft.Container(height=16),

@@ -15,6 +15,7 @@ from ui.views import (
     sms_logs_view,
     settings_view,
     reports_view,
+    inactive_customers_view,
 )
 
 
@@ -28,6 +29,7 @@ ROUTES = {
     "logs":         sms_logs_view.build,
     "settings":     settings_view.build,
     "reports":      reports_view.build,
+    "inactive":     inactive_customers_view.build,
 }
 
 

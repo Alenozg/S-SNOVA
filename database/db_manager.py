@@ -232,6 +232,13 @@ if _USE_PG:
                     'Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}'
                 )
                 ON CONFLICT (key) DO NOTHING;
+
+                INSERT INTO app_settings (key, value)
+                VALUES (
+                    'cancellation_template',
+                    'Merhaba {name}, {date} tarihli saat {time} randevunuz iptal edilmistir. Bilginize. {salon}'
+                )
+                ON CONFLICT (key) DO NOTHING;
             """)
             conn.commit()
             log.info("PostgreSQL şeması hazır.")
@@ -368,6 +375,8 @@ else:
              'Merhaba {name}, {date} tarihli saat {time} randevunuz olusturulmustur. Gorusmek uzere. {salon}'),
             ('birthday_template',
              'Sevgili {name}, dogum gununuz kutlu olsun! Size ozel surprizimiz icin bekleriz. {salon}'),
+            ('cancellation_template',
+             'Merhaba {name}, {date} tarihli saat {time} randevunuz iptal edilmistir. Bilginize. {salon}'),
         ]
         for k, v in defaults:
             cur.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)", (k, v))

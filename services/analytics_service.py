@@ -113,3 +113,78 @@ def appointment_status_breakdown() -> dict:
     """
     rows = fetch_all(q)
     return {r["status"]: r["cnt"] for r in rows}
+
+
+def inactive_customers(days: int = 60) -> list[dict]:
+    """Son X gündür hiç tamamlanmış randevusu olmayan İYS onaylı müşteriler."""
+    if _USE_PG:
+        q = """
+            SELECT c.id, c.first_name, c.last_name,
+                   c.phone,
+                   MAX(a.appointment_at) AS last_visit,
+                   COUNT(a.id)           AS total_visits
+            FROM customers c
+            LEFT JOIN appointments a
+                   ON a.customer_id = c.id AND a.status = 'completed'
+            WHERE c.iys_consent = 1
+              AND c.phone IS NOT NULL
+            GROUP BY c.id, c.first_name, c.last_name, c.phone
+            HAVING MAX(a.appointment_at) < CURRENT_TIMESTAMP - (%(days)s || ' days')::INTERVAL
+                OR MAX(a.appointment_at) IS NULL
+            ORDER BY last_visit ASC NULLS FIRST
+        """
+        from database.db_manager import fetch_all as _fa
+        import psycopg2.extras
+        # psycopg2 named params için doğrudan çağır
+        from database.db_manager import _pg_connect
+        conn = _pg_connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(q, {"days": days})
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+    else:
+        q = """
+            SELECT c.id, c.first_name, c.last_name,
+                   c.phone,
+                   MAX(a.appointment_at) AS last_visit,
+                   COUNT(a.id)           AS total_visits
+            FROM customers c
+            LEFT JOIN appointments a
+                   ON a.customer_id = c.id AND a.status = 'completed'
+            WHERE c.iys_consent = 1
+              AND c.phone IS NOT NULL
+            GROUP BY c.id
+            HAVING MAX(a.appointment_at) < datetime('now', ?)
+                OR MAX(a.appointment_at) IS NULL
+            ORDER BY last_visit ASC
+        """
+        return fetch_all(q, (f"-{days} days",))
+
+
+def noshow_customers(min_count: int = 2) -> list[dict]:
+    """En az min_count kez gelmemiş müşteriler, sıralamayla."""
+    q = """
+        SELECT c.id, c.first_name, c.last_name, c.phone,
+               COUNT(a.id)  AS noshow_count,
+               MAX(a.appointment_at) AS last_noshow
+        FROM customers c
+        JOIN appointments a ON a.customer_id = c.id
+        WHERE a.status IN ('no_show', 'cancelled')
+        GROUP BY c.id, c.first_name, c.last_name, c.phone
+        HAVING COUNT(a.id) >= ?
+        ORDER BY noshow_count DESC
+    """ if not _USE_PG else """
+        SELECT c.id, c.first_name, c.last_name, c.phone,
+               COUNT(a.id)  AS noshow_count,
+               MAX(a.appointment_at) AS last_noshow
+        FROM customers c
+        JOIN appointments a ON a.customer_id = c.id
+        WHERE a.status IN ('no_show', 'cancelled')
+        GROUP BY c.id, c.first_name, c.last_name, c.phone
+        HAVING COUNT(a.id) >= %s
+        ORDER BY noshow_count DESC
+    """
+    return fetch_all(q, (min_count,))

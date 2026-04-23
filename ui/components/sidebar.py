@@ -14,6 +14,7 @@ MENU_ITEMS = [
     ("campaigns",    "Kampanyalar", ft.icons.CAMPAIGN_OUTLINED),
     ("logs",         "SMS Geçmişi", ft.icons.MAIL_OUTLINE),
     ("reports",      "Raporlar",    ft.icons.BAR_CHART_OUTLINED),
+    ("inactive",     "Kayıp Müşteriler", ft.icons.PERSON_OFF_OUTLINED),
     ("settings",     "Ayarlar",     ft.icons.SETTINGS_OUTLINED),
 ]
 

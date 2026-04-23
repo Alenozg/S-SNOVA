@@ -936,6 +936,34 @@ class AppointmentsView:
 
     def _set_status(self, aid: int, status: str) -> None:
         appointment_service.set_status(aid, status)
+        # İptal edildiğinde müşteriye SMS gönder
+        if status == "cancelled":
+            try:
+                from services import sms_service
+                from database.db_manager import get_setting
+                from services import customer_service as _cs
+                appt = appointment_service.get_appointment(aid)
+                if appt and appt.customer_phone:
+                    _tpl = get_setting(
+                        "cancellation_template",
+                        "Merhaba {name}, {date} tarihli saat {time} randevunuz iptal edilmistir. Bilginize. {salon}",
+                    )
+                    _msg = _tpl.format(
+                        name=(appt.customer_name or "").split()[0],
+                        date=appt.appointment_at.strftime("%d.%m.%Y") if appt.appointment_at else "",
+                        time=appt.appointment_at.strftime("%H:%M") if appt.appointment_at else "",
+                        salon=config.SALON_NAME,
+                    )
+                    sms_service.send_sms(
+                        phone=appt.customer_phone,
+                        message=_msg,
+                        customer_id=appt.customer_id,
+                        appointment_id=aid,
+                        sms_type="reminder",
+                    )
+            except Exception as _e:
+                import logging as _lg
+                _lg.getLogger(__name__).warning("İptal SMS hatası: %s", _e)
         self.refresh()
 
     def _delete(self, aid: int) -> None:

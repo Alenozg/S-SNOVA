@@ -41,6 +41,10 @@ GENERIC_SMS_URL     = os.getenv("GENERIC_SMS_URL", "")
 GENERIC_SMS_API_KEY = os.getenv("GENERIC_SMS_API_KEY", "")
 GENERIC_SMS_SENDER  = os.getenv("GENERIC_SMS_SENDER", "")
 
+# ── SMS Maliyet ──────────────────────────────────────────────────
+# Segment başına maliyet (€). .env'de SMS_COST_PER_SEGMENT=0.02 ile override edilebilir.
+SMS_COST_PER_SEGMENT = float(os.getenv("SMS_COST_PER_SEGMENT", "0.02"))
+
 # ── Otomasyon ────────────────────────────────────────────────────
 REMINDER_HOURS_BEFORE            = int(os.getenv("REMINDER_HOURS_BEFORE", "24"))
 SCHEDULER_CHECK_INTERVAL_MINUTES = int(os.getenv("SCHEDULER_CHECK_INTERVAL_MINUTES", "15"))

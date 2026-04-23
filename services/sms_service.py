@@ -147,6 +147,25 @@ def sanitize_message(text: str) -> str:
     return (text or "").translate(GSM_LATIN_MAP)
 
 
+def sms_segment_count(message: str) -> int:
+    """
+    Standart GSM-7 charset varsayarak segment sayısını hesaplar.
+    Tek parça ≤ 160 karakter (1 segment).
+    Çok parçalı iletide her segment 153 karakter.
+    """
+    length = len(message or "")
+    if length == 0:
+        return 0
+    if length <= 160:
+        return 1
+    return -(-length // 153)  # ceiling division
+
+
+def calculate_sms_cost(message: str) -> float:
+    """Mesaja göre tahmini maliyet (€) döndürür."""
+    return round(sms_segment_count(message) * config.SMS_COST_PER_SEGMENT, 4)
+
+
 def send_sms(
     phone: str,
     message: str,

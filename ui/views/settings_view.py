@@ -305,9 +305,108 @@ def build(page: ft.Page) -> ft.Control:
         "Merhaba {name}, {date} tarihli saat {time} randevunuz iptal edilmistir. Bilginize. {salon}",
     )
 
+    # ── Toplu İYS Güncelleme ─────────────────────────────────────
+    from database import fetch_one as _fo
+    iys_total   = (_fo("SELECT COUNT(*) AS c FROM customers") or {}).get("c", 0)
+    iys_done    = (_fo("SELECT COUNT(*) AS c FROM customers WHERE iys_consent=1") or {}).get("c", 0)
+    iys_pending = iys_total - iys_done
+    iys_status  = ft.Text(
+        f"Toplam {iys_total} müşteri  •  {iys_done} onaylı  •  {iys_pending} onaysız",
+        size=12, color=theme.TEXT_MUTED,
+    )
+
+    def bulk_iys(e):
+        from database import execute as _ex
+        _ex("UPDATE customers SET iys_consent=1, iys_consent_date=CURRENT_TIMESTAMP WHERE iys_consent=0")
+        iys_status.value = f"✓ Tüm {iys_total} müşteri İYS onaylı yapıldı."
+        iys_status.color = theme.SUCCESS
+        iys_status.update()
+        page.dialog.open = False
+        page.update()
+
+    def confirm_bulk_iys(e):
+        dlg = ft.AlertDialog(
+            modal=True, bgcolor=theme.SURFACE,
+            title=ft.Text("Toplu İYS Onayı", color=theme.TEXT,
+                          weight=ft.FontWeight.W_400,
+                          font_family=theme.FONT_FAMILY_DISPLAY, size=20),
+            content=ft.Container(
+                content=ft.Text(
+                    f"{iys_pending} müşteri İYS onaylı yapılacak.\n"
+                    "Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+                    size=13, color=theme.TEXT, no_wrap=False,
+                ),
+                width=400,
+                padding=ft.padding.only(top=8),
+            ),
+            actions=[
+                theme.ghost_button("Vazgeç", on_click=lambda e: (
+                    setattr(page.dialog, "open", False) or page.update()
+                )),
+                theme.primary_button("Evet, Onayla", icon=ft.icons.CHECK_CIRCLE_OUTLINE,
+                                     on_click=bulk_iys),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.dialog = dlg
+        page.dialog.open = True
+        page.update()
+
+    iys_card = theme.card(
+        ft.Column(
+            [
+                ft.Row(
+                    [
+                        ft.Icon(ft.icons.VERIFIED_USER_OUTLINED, size=18, color=theme.SUCCESS),
+                        theme.h3("İYS Toplu Onay"),
+                    ],
+                    spacing=8,
+                ),
+                ft.Container(height=8),
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(ft.icons.INFO_OUTLINE, size=13, color=theme.TEXT_MUTED),
+                            ft.Text(
+                                "Tüm mevcut müşterileri tek tıkla İYS onaylı yapabilirsiniz. "
+                                "Onaylı müşterilere kampanya ve otomatik SMS gönderilebilir.",
+                                size=11, color=theme.TEXT_MUTED, expand=True, no_wrap=False,
+                            ),
+                        ],
+                        spacing=8,
+                        vertical_alignment=ft.CrossAxisAlignment.START,
+                    ),
+                    padding=10, bgcolor=theme.SURFACE_ALT, border_radius=2,
+                ),
+                ft.Container(height=12),
+                ft.Row(
+                    [
+                        iys_status,
+                        ft.Container(expand=True),
+                        theme.primary_button(
+                            "Tümünü Onayla",
+                            icon=ft.icons.VERIFIED_USER_OUTLINED,
+                            on_click=confirm_bulk_iys,
+                        ) if iys_pending > 0 else ft.Container(
+                            content=ft.Row(
+                                [ft.Icon(ft.icons.CHECK_CIRCLE, size=16, color=theme.SUCCESS),
+                                 ft.Text("Hepsi zaten onaylı", size=12, color=theme.SUCCESS)],
+                                spacing=6,
+                            ),
+                        ),
+                    ],
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+            ],
+            spacing=0,
+        )
+    )
+
     return ft.Column(
         [
             header_block,
+            iys_card,
+            ft.Container(height=16),
             general_card,
             ft.Container(height=16),
             template_card,

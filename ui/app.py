@@ -117,7 +117,7 @@ class SalonApp:
                         ft.Container(height=6),
                         ft.Text(user_name, size=12, color=theme.TEXT_MUTED),
                     ], spacing=2),
-                    padding=ft.padding.fromLTRB(20, 32, 20, 12),
+                    padding=ft.padding.only(left=20, top=32, right=20, bottom=12),
                 ),
                 ft.Divider(color=theme.DIVIDER, height=1),
                 ft.Container(height=4),

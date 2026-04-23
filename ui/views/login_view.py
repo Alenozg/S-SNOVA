@@ -30,9 +30,8 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
     )
-    err_text = ft.Text(
-        "", color=theme.ERROR, size=13, text_align=ft.TextAlign.CENTER,
-    )
+    err_text = ft.Text("", color=theme.ERROR, size=13,
+                       text_align=ft.TextAlign.CENTER)
     btn_login = ft.ElevatedButton(
         text="Giriş Yap",
         style=ft.ButtonStyle(
@@ -93,14 +92,10 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
                 ft.Container(height=8),
                 err_text,
                 ft.Container(height=20),
-                ft.Row(
-                    [btn_login],
-                    alignment=ft.MainAxisAlignment.CENTER,
-                ),
+                ft.Row([btn_login], alignment=ft.MainAxisAlignment.CENTER),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            tight=True,
-            spacing=0,
+            tight=True, spacing=0,
         ),
         bgcolor=theme.SURFACE,
         border=ft.border.all(1, theme.DIVIDER),
@@ -108,18 +103,12 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         padding=ft.padding.symmetric(horizontal=28, vertical=36),
     )
 
-    # Stack ile tam ortala — expand=True + alignment çalışıyor
-    return ft.Stack(
-        [
-            # Arka plan
-            ft.Container(expand=True, bgcolor=theme.BG),
-            # Kart — ekranın ortasında, max genişlik 400
-            ft.Container(
-                content=card,
-                alignment=ft.alignment.center,
-                expand=True,
-                padding=ft.padding.symmetric(horizontal=20),
-            ),
-        ],
+    # En güvenilir layout: tek Container, alignment=center, expand=True
+    # (Stack yerine — Stack iOS Safari'de absolute positioning sorunu yaşatabilir)
+    return ft.Container(
+        content=card,
+        alignment=ft.alignment.center,
         expand=True,
+        bgcolor=theme.BG,
+        padding=ft.padding.symmetric(horizontal=20),
     )

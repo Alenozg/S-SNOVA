@@ -180,6 +180,10 @@ class CustomersView:
                         "Seçimi Temizle",
                         on_click=lambda e: self._clear_selection(),
                     ),
+                    theme.ghost_button(
+                        "İYS Onayla", icon=ft.icons.VERIFIED_USER_OUTLINED,
+                        on_click=lambda e: self._bulk_iys_approve(),
+                    ),
                     theme.primary_button(
                         "Toplu SMS", icon=ft.icons.SEND_OUTLINED,
                         on_click=lambda e: self._bulk_sms(),
@@ -199,6 +203,58 @@ class CustomersView:
     def _clear_selection(self) -> None:
         self._selected_ids.clear()
         self.refresh()
+
+    def _bulk_iys_approve(self) -> None:
+        """Seçili müşterileri toplu olarak İYS onaylı yap."""
+        if not self._selected_ids:
+            return
+        ids = list(self._selected_ids)
+        count = len(ids)
+
+        def confirm(e):
+            from database import execute
+            from database.db_manager import _USE_PG
+            ph = "%s" if _USE_PG else "?"
+            placeholders = ",".join([ph] * len(ids))
+            execute(
+                f"UPDATE customers SET iys_consent=1, iys_consent_date=CURRENT_TIMESTAMP "
+                f"WHERE id IN ({placeholders})",
+                tuple(ids),
+            )
+            self.page.dialog.open = False
+            self.page.update()
+            self._clear_selection()
+            self.page.snack_bar = ft.SnackBar(
+                ft.Text(f"✓ {count} müşteri İYS onaylı yapıldı."),
+                bgcolor=theme.SUCCESS,
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+
+        dlg = ft.AlertDialog(
+            modal=True, bgcolor=theme.SURFACE,
+            title=ft.Text("İYS Toplu Onay", color=theme.TEXT,
+                          weight=ft.FontWeight.W_400,
+                          font_family=theme.FONT_FAMILY_DISPLAY, size=20),
+            content=ft.Container(
+                content=ft.Text(
+                    f"Seçili {count} müşteri İYS onaylı yapılacak.\n"
+                    "Onaylı müşterilere kampanya SMS'i gönderilebilir.",
+                    size=13, color=theme.TEXT, no_wrap=False,
+                ),
+                width=380, padding=ft.padding.only(top=8),
+            ),
+            actions=[
+                theme.ghost_button("Vazgeç",
+                    on_click=lambda e: (setattr(self.page.dialog, "open", False) or self.page.update())),
+                theme.primary_button("Onayla", icon=ft.icons.VERIFIED_USER_OUTLINED,
+                                     on_click=confirm),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
 
     def _bulk_sms(self) -> None:
         """Seçilen müşterilere toplu SMS - kampanya formunu önceden doldurur."""

@@ -33,127 +33,79 @@ ROUTES = {
 }
 
 MENU_ITEMS = [
-    ("dashboard",    "Ana Sayfa",         ft.icons.DASHBOARD_OUTLINED),
-    ("customers",    "Müşteriler",         ft.icons.PEOPLE_OUTLINE),
-    ("appointments", "Randevular",         ft.icons.CALENDAR_MONTH_OUTLINED),
-    ("campaigns",    "Kampanyalar",        ft.icons.CAMPAIGN_OUTLINED),
-    ("staff",        "Personel",           ft.icons.BADGE_OUTLINED),
-    ("services",     "Hizmetler",          ft.icons.DESIGN_SERVICES_OUTLINED),
-    ("logs",         "SMS Geçmişi",        ft.icons.MAIL_OUTLINE),
-    ("reports",      "Raporlar",           ft.icons.BAR_CHART_OUTLINED),
-    ("inactive",     "Kayıp Müşteriler",   ft.icons.PERSON_OFF_OUTLINED),
-    ("settings",     "Ayarlar",            ft.icons.SETTINGS_OUTLINED),
+    ("dashboard",    "Ana Sayfa",       ft.icons.DASHBOARD_OUTLINED),
+    ("customers",    "Müşteriler",      ft.icons.PEOPLE_OUTLINE),
+    ("appointments", "Randevular",      ft.icons.CALENDAR_MONTH_OUTLINED),
+    ("campaigns",    "Kampanyalar",     ft.icons.CAMPAIGN_OUTLINED),
+    ("staff",        "Personel",        ft.icons.BADGE_OUTLINED),
+    ("services",     "Hizmetler",       ft.icons.DESIGN_SERVICES_OUTLINED),
+    ("logs",         "SMS Geçmişi",     ft.icons.MAIL_OUTLINE),
+    ("reports",      "Raporlar",        ft.icons.BAR_CHART_OUTLINED),
+    ("inactive",     "Kayıp Müşteriler",ft.icons.PERSON_OFF_OUTLINED),
+    ("settings",     "Ayarlar",         ft.icons.SETTINGS_OUTLINED),
 ]
 
-MOBILE_BREAKPOINT = 768
+MOBILE_BP = 768
 
 
 class SalonApp:
     def __init__(self, page: ft.Page, current_user: dict | None = None):
-        self.page          = page
-        self.current_user  = current_user or {}
-        self._active_route = "dashboard"
+        self.page         = page
+        self.current_user = current_user or {}
+        self._active      = "dashboard"
 
-        # İçerik alanı — her iki modda da kullanılır
         self.content_area = ft.Container(
             expand=True,
             bgcolor=theme.BG,
-            padding=self._content_padding(),
+            padding=ft.padding.symmetric(horizontal=16, vertical=20),
         )
 
-        # Masaüstü sidebar
-        self.sidebar = Sidebar(
+    # ─── helpers ───────────────────────────────────────────────
+    @property
+    def _mobile(self) -> bool:
+        try:
+            return (self.page.width or 1200) < MOBILE_BP
+        except Exception:
+            return False
+
+    # ─── mount ────────────────────────────────────────────────
+    def mount(self) -> None:
+        if self._mobile:
+            self._mount_mobile()
+        else:
+            self._mount_desktop()
+        self.navigate("dashboard")
+
+    def _mount_desktop(self):
+        self.content_area.padding = ft.padding.symmetric(horizontal=48, vertical=40)
+        sidebar = Sidebar(
             on_change=self.navigate,
             active="dashboard",
             current_user=self.current_user,
             on_logout=self._logout,
         )
+        self.page.appbar = None
+        self.page.drawer = None
+        self.page.add(ft.Row([sidebar, self.content_area], spacing=0, expand=True))
 
-        # Mobil: NavigationDrawer
-        self._drawer = self._build_drawer()
-        self.page.drawer = self._drawer
+    def _mount_mobile(self):
+        self.content_area.padding = ft.padding.symmetric(horizontal=14, vertical=16)
 
-        # Mobil: AppBar
-        self._appbar = self._build_appbar()
+        # Drawer
+        drawer = self._build_drawer()
+        self.page.drawer = drawer
 
-        # Resize dinleyicisi
-        self.page.on_resized = self._on_resize
-
-    # ── Yardımcılar ──────────────────────────────────────────────
-    @property
-    def _is_mobile(self) -> bool:
-        try:
-            return (self.page.width or 1200) < MOBILE_BREAKPOINT
-        except Exception:
-            return False
-
-    def _content_padding(self):
-        if self._is_mobile:
-            return ft.padding.symmetric(horizontal=16, vertical=20)
-        return ft.padding.symmetric(horizontal=48, vertical=40)
-
-    # ── Mobil drawer ─────────────────────────────────────────────
-    def _build_drawer(self) -> ft.NavigationDrawer:
-        tiles = []
-        for key, label, icon in MENU_ITEMS:
-            tiles.append(ft.ListTile(
-                leading=ft.Icon(icon, size=20, color=theme.TEXT_MUTED),
-                title=ft.Text(label, size=13, color=theme.TEXT),
-                on_click=lambda e, k=key: self._drawer_select(k),
-                data=key,
-            ))
-
-        user_name = self.current_user.get("full_name", "Kullanıcı")
-        header = ft.Container(
-            content=ft.Column([
-                ft.Text("SISNOVA", size=18, weight=ft.FontWeight.W_300,
-                        color=theme.TEXT, font_family=theme.FONT_FAMILY_DISPLAY),
-                ft.Text("B E A U T Y", size=9, color=theme.TEXT_MUTED),
-                ft.Container(height=8),
-                ft.Text(user_name, size=12, color=theme.TEXT_MUTED),
-            ], spacing=2),
-            padding=ft.padding.fromLTRB(20, 32, 20, 16),
-        )
-
-        logout_tile = ft.ListTile(
-            leading=ft.Icon(ft.icons.LOGOUT_OUTLINED, size=18, color=theme.TEXT_MUTED),
-            title=ft.Text("Çıkış Yap", size=13, color=theme.TEXT_MUTED),
-            on_click=lambda e: self._logout(),
-        )
-
-        return ft.NavigationDrawer(
-            bgcolor=theme.SURFACE,
-            controls=[
-                header,
-                ft.Divider(color=theme.DIVIDER, height=1),
-                ft.Container(height=8),
-                *tiles,
-                ft.Container(expand=True),
-                ft.Divider(color=theme.DIVIDER, height=1),
-                logout_tile,
-            ],
-        )
-
-    def _drawer_select(self, key: str):
-        self._drawer.open = False
-        self.page.update()
-        self.navigate(key)
-        # AppBar başlığını güncelle
-        label = next((l for k, l, _ in MENU_ITEMS if k == key), "")
-        if self._appbar.title:
-            self._appbar.title.value = label
-            self.page.update()
-
-    def _build_appbar(self) -> ft.AppBar:
-        return ft.AppBar(
+        # AppBar
+        title_ref = ft.Ref[ft.Text]()
+        appbar = ft.AppBar(
             leading=ft.IconButton(
                 icon=ft.icons.MENU,
                 icon_color=theme.TEXT,
                 on_click=lambda e: self._open_drawer(),
             ),
             leading_width=48,
-            title=ft.Text("Ana Sayfa", size=16, color=theme.TEXT,
-                          weight=ft.FontWeight.W_400,
+            title=ft.Text("Ana Sayfa", ref=title_ref, size=16,
+                          color=theme.TEXT, weight=ft.FontWeight.W_400,
                           font_family=theme.FONT_FAMILY_DISPLAY),
             bgcolor=theme.SURFACE,
             elevation=0,
@@ -173,44 +125,72 @@ class SalonApp:
                 ),
             ],
         )
+        self._title_ref = title_ref
+        self.page.appbar = appbar
+        self.page.add(self.content_area)
+
+    def _build_drawer(self) -> ft.NavigationDrawer:
+        tiles = []
+        for key, label, icon in MENU_ITEMS:
+            tiles.append(ft.ListTile(
+                leading=ft.Icon(icon, size=20, color=theme.TEXT_MUTED),
+                title=ft.Text(label, size=13, color=theme.TEXT),
+                on_click=lambda e, k=key, l=label: self._drawer_nav(k, l),
+            ))
+
+        user_name = self.current_user.get("full_name", "Kullanıcı")
+        header = ft.Container(
+            content=ft.Column([
+                ft.Text("SISNOVA", size=18, weight=ft.FontWeight.W_300,
+                        color=theme.TEXT, font_family=theme.FONT_FAMILY_DISPLAY),
+                ft.Text("B E A U T Y", size=9, color=theme.TEXT_MUTED),
+                ft.Container(height=6),
+                ft.Text(user_name, size=12, color=theme.TEXT_MUTED),
+            ], spacing=2),
+            padding=ft.padding.fromLTRB(20, 32, 20, 12),
+        )
+
+        return ft.NavigationDrawer(
+            bgcolor=theme.SURFACE,
+            controls=[
+                header,
+                ft.Divider(color=theme.DIVIDER, height=1),
+                ft.Container(height=4),
+                *tiles,
+                ft.Divider(color=theme.DIVIDER, height=1),
+                ft.ListTile(
+                    leading=ft.Icon(ft.icons.LOGOUT_OUTLINED, size=18,
+                                    color=theme.TEXT_MUTED),
+                    title=ft.Text("Çıkış Yap", size=13, color=theme.TEXT_MUTED),
+                    on_click=lambda e: self._logout(),
+                ),
+            ],
+        )
 
     def _open_drawer(self):
-        self._drawer.open = True
-        self.page.update()
+        if self.page.drawer:
+            self.page.drawer.open = True
+            self.page.update()
 
-    # ── Layout kurulumu ──────────────────────────────────────────
-    def mount(self) -> None:
-        self._apply_layout()
-        self.navigate("dashboard")
+    def _drawer_nav(self, key: str, label: str):
+        if self.page.drawer:
+            self.page.drawer.open = False
+            self.page.update()
+        # AppBar başlığını güncelle
+        try:
+            if self._title_ref and self._title_ref.current:
+                self._title_ref.current.value = label
+                self._title_ref.current.update()
+        except Exception:
+            pass
+        self.navigate(key)
 
-    def _apply_layout(self):
-        self.page.controls.clear()
-        self.content_area.padding = self._content_padding()
-
-        if self._is_mobile:
-            self.page.appbar = self._appbar
-            self.page.add(self.content_area)
-        else:
-            self.page.appbar = None
-            layout = ft.Row(
-                [self.sidebar, self.content_area],
-                spacing=0, expand=True,
-            )
-            self.page.add(layout)
-
-        self.page.update()
-
-    def _on_resize(self, e):
-        self._apply_layout()
-        # Mevcut route'u yeniden render et
-        self.navigate(self._active_route)
-
-    # ── Navigasyon ───────────────────────────────────────────────
+    # ─── navigate ─────────────────────────────────────────────
     def navigate(self, key: str) -> None:
         builder = ROUTES.get(key)
         if not builder:
             return
-        self._active_route = key
+        self._active = key
         try:
             view = builder(self.page)
             self.content_area.content = view
@@ -221,7 +201,7 @@ class SalonApp:
                 content=ft.Column([
                     theme.h2("Bir şeyler ters gitti"),
                     ft.Container(height=8),
-                    theme.body(f"{ex}", muted=True),
+                    theme.body(str(ex), muted=True),
                 ]),
                 padding=40,
             )
@@ -229,19 +209,27 @@ class SalonApp:
                 self.content_area.update()
             raise
 
-    # ── Çıkış ────────────────────────────────────────────────────
+    # ─── logout ───────────────────────────────────────────────
     def _logout(self):
         try:
             self.page.session.remove("current_user")
         except Exception:
             pass
+        # Temizle
         self.page.controls.clear()
         self.page.appbar = None
         self.page.drawer = None
+        self.page.update()
+
         from ui.views.login_view import build_login
+
         def reload(user):
             self.page.controls.clear()
+            self.page.appbar = None
+            self.page.drawer = None
+            self.page.update()
             app = SalonApp(self.page, current_user=user)
             app.mount()
+
         self.page.add(build_login(self.page, on_success=reload))
         self.page.update()

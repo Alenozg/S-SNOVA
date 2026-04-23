@@ -31,10 +31,8 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
     )
     err_text = ft.Text(
-        "", color=theme.ERROR, size=13,
-        text_align=ft.TextAlign.CENTER,
+        "", color=theme.ERROR, size=13, text_align=ft.TextAlign.CENTER,
     )
-
     btn_login = ft.ElevatedButton(
         text="Giriş Yap",
         style=ft.ButtonStyle(
@@ -48,54 +46,33 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
 
     def submit(e=None):
         err_text.value = ""
-        try:
-            page.update()
-        except Exception:
-            pass
-
         username = (f_user.value or "").strip()
         password = (f_pass.value or "").strip()
-
         if not username or not password:
             err_text.value = "Kullanıcı adı ve şifre zorunludur."
-            try:
-                page.update()
-            except Exception:
-                pass
+            page.update()
             return
-
         try:
             user = auth_service.login(username, password)
         except Exception as ex:
             err_text.value = f"Bağlantı hatası: {ex}"
-            try:
-                page.update()
-            except Exception:
-                pass
+            page.update()
             return
-
         if user:
             try:
                 on_success(user)
             except Exception as ex:
                 err_text.value = f"Yükleme hatası: {ex}"
-                try:
-                    page.update()
-                except Exception:
-                    pass
+                page.update()
         else:
             err_text.value = "Kullanıcı adı veya şifre hatalı."
             f_pass.value = ""
-            try:
-                page.update()
-            except Exception:
-                pass
+            page.update()
 
     btn_login.on_click = submit
     f_user.on_submit   = submit
     f_pass.on_submit   = submit
 
-    # Kart — sabit genişlik yok, padding ile responsive
     card = ft.Container(
         content=ft.Column(
             [
@@ -109,13 +86,13 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
                     "Sisnova Beauty CRM", size=12, color=theme.TEXT_MUTED,
                     text_align=ft.TextAlign.CENTER,
                 ),
-                ft.Container(height=24),
+                ft.Container(height=28),
                 f_user,
                 ft.Container(height=10),
                 f_pass,
                 ft.Container(height=8),
                 err_text,
-                ft.Container(height=16),
+                ft.Container(height=20),
                 ft.Row(
                     [btn_login],
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -128,25 +105,21 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         bgcolor=theme.SURFACE,
         border=ft.border.all(1, theme.DIVIDER),
         border_radius=10,
-        padding=ft.padding.symmetric(horizontal=28, vertical=32),
+        padding=ft.padding.symmetric(horizontal=28, vertical=36),
     )
 
-    # Dış kapsayıcı: ortalar + scroll (mobil klavye için)
-    return ft.Container(
-        content=ft.Column(
-            [
-                ft.Container(expand=True),
-                ft.Container(
-                    content=card,
-                    # Max genişlik 400, kenarlar 20px padding
-                    padding=ft.padding.symmetric(horizontal=20),
-                    alignment=ft.alignment.center,
-                ),
-                ft.Container(expand=True),
-            ],
-            expand=True,
-            scroll=ft.ScrollMode.AUTO,
-        ),
+    # Stack ile tam ortala — expand=True + alignment çalışıyor
+    return ft.Stack(
+        [
+            # Arka plan
+            ft.Container(expand=True, bgcolor=theme.BG),
+            # Kart — ekranın ortasında, max genişlik 400
+            ft.Container(
+                content=card,
+                alignment=ft.alignment.center,
+                expand=True,
+                padding=ft.padding.symmetric(horizontal=20),
+            ),
+        ],
         expand=True,
-        bgcolor=theme.BG,
     )

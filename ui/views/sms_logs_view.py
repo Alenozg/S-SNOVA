@@ -23,8 +23,8 @@ TYPE_COLORS = {
 
 
 def _fmt_cost(cost: float) -> str:
-    """0.02 € formatında döndürür."""
-    return f"{cost:.2f} €"
+    """0.40 TL formatında döndürür."""
+    return f"{cost:.2f} TL"
 
 
 def build(page: ft.Page) -> ft.Control:
@@ -87,7 +87,7 @@ def build(page: ft.Page) -> ft.Control:
             summary_card("Başarısız", str(total_sms - sent_count),
                          ft.icons.ERROR_OUTLINE, theme.ERROR),
             summary_card("Toplam Maliyet", _fmt_cost(total_cost),
-                         ft.icons.EURO_OUTLINED, theme.WARN),
+                         ft.icons.CURRENCY_LIRA_OUTLINED, theme.WARN),
         ],
         spacing=12,
     )

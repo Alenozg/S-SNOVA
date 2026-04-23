@@ -149,20 +149,26 @@ def sanitize_message(text: str) -> str:
 
 def sms_segment_count(message: str) -> int:
     """
-    Standart GSM-7 charset varsayarak segment sayısını hesaplar.
-    Tek parça ≤ 160 karakter (1 segment).
-    Çok parçalı iletide her segment 153 karakter.
+    Netgsm Türkçe karakter kurallarına göre segment sayısını hesaplar.
+
+    - Türkçe karakterli mesajda 1 SMS = 150 karakter.
+    - Birleşik mesajda da her parça 150 karakter üzerinden hesaplanır.
+      (300 karakter → 2 SMS, 450 karakter → 3 SMS …)
+    - Maksimum 917 karakter gönderilebilir (config.SMS_MAX_CHARS).
+    - Karakter sınırı ve maliyet config.py üzerinden .env ile override edilebilir.
     """
     length = len(message or "")
     if length == 0:
         return 0
-    if length <= 160:
-        return 1
-    return -(-length // 153)  # ceiling division
+    max_chars = getattr(config, "SMS_MAX_CHARS", 917)
+    chars_per = getattr(config, "SMS_CHARS_PER_SEGMENT", 150)
+    # 917 karakteri aşan mesaj gönderilemez, yine de segment hesabı yap
+    length = min(length, max_chars)
+    return -(-length // chars_per)  # ceiling division
 
 
 def calculate_sms_cost(message: str) -> float:
-    """Mesaja göre tahmini maliyet (€) döndürür."""
+    """Mesaja göre tahmini maliyet (TL) döndürür."""
     return round(sms_segment_count(message) * config.SMS_COST_PER_SEGMENT, 4)
 
 

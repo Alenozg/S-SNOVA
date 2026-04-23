@@ -41,9 +41,15 @@ GENERIC_SMS_URL     = os.getenv("GENERIC_SMS_URL", "")
 GENERIC_SMS_API_KEY = os.getenv("GENERIC_SMS_API_KEY", "")
 GENERIC_SMS_SENDER  = os.getenv("GENERIC_SMS_SENDER", "")
 
-# ── SMS Maliyet ──────────────────────────────────────────────────
-# Segment başına maliyet (€). .env'de SMS_COST_PER_SEGMENT=0.02 ile override edilebilir.
-SMS_COST_PER_SEGMENT = float(os.getenv("SMS_COST_PER_SEGMENT", "0.02"))
+# ── SMS Maliyet (Netgsm / Türkçe karakter kuralları) ─────────────────
+# Türkçe karakterli mesajlarda 1 SMS = 150 karakter.
+# Birleşik mesajlarda da her parça 150 karakter (max 917 karakter = 6 SMS).
+# Birim fiyat: Netgsm toplu/API ortalama ~0,40 TL.
+# .env'de SMS_COST_PER_SEGMENT ile override edilebilir.
+SMS_CHARS_PER_SEGMENT = int(os.getenv("SMS_CHARS_PER_SEGMENT", "150"))
+SMS_MAX_CHARS         = int(os.getenv("SMS_MAX_CHARS", "917"))
+SMS_COST_PER_SEGMENT  = float(os.getenv("SMS_COST_PER_SEGMENT", "0.40"))
+SMS_CURRENCY          = os.getenv("SMS_CURRENCY", "TL")
 
 # ── Otomasyon ────────────────────────────────────────────────────
 REMINDER_HOURS_BEFORE            = int(os.getenv("REMINDER_HOURS_BEFORE", "24"))

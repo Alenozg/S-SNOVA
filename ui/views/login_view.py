@@ -1,5 +1,5 @@
 """
-Giriş ekranı — kayıt özelliği kaldırıldı, yalnızca admin girişi.
+Giriş ekranı — mobil uyumlu, kayıt özelliği yok.
 """
 import flet as ft
 from ui import theme
@@ -7,7 +7,7 @@ from services import auth_service
 
 
 def build_login(page: ft.Page, on_success) -> ft.Control:
-    """on_success(user_dict) → giriş başarılı olduğunda çağrılır."""
+    is_mobile = (page.width or 1200) < 768
 
     f_user = ft.TextField(
         label="Kullanıcı Adı",
@@ -18,7 +18,7 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         text_style=ft.TextStyle(color=theme.TEXT, size=14),
         label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
-        autofocus=True,
+        autofocus=not is_mobile,  # mobilde autofocus klavyeyi tetikler
     )
     f_pass = ft.TextField(
         label="Şifre",
@@ -32,10 +32,19 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
         label_style=ft.TextStyle(color=theme.TEXT_MUTED, size=12),
         content_padding=ft.padding.symmetric(horizontal=14, vertical=16),
     )
-    err_text = ft.Text(
-        "", color=theme.ERROR, size=13, text_align=ft.TextAlign.CENTER
+    err_text = ft.Text("", color=theme.ERROR, size=13,
+                       text_align=ft.TextAlign.CENTER)
+    btn_login = ft.ElevatedButton(
+        text="Giriş Yap",
+        style=ft.ButtonStyle(
+            bgcolor=theme.ACCENT,
+            color="#FFFFFF",
+            shape=ft.RoundedRectangleBorder(radius=2),
+            padding=ft.padding.symmetric(horizontal=24, vertical=18),
+            text_style=ft.TextStyle(weight=ft.FontWeight.W_400, size=13),
+        ),
+        width=9999,  # tam genişlik — mobilde buton kaymasın
     )
-    btn_login = theme.primary_button("Giriş Yap")
 
     def submit(e=None):
         err_text.value = ""
@@ -59,12 +68,16 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
     f_user.on_submit   = submit
     f_pass.on_submit   = submit
 
+    # Mobilde padding küçük, kart tam genişlik
+    h_pad = 20 if is_mobile else 36
+    v_pad = 28 if is_mobile else 32
+
     card = ft.Container(
         content=ft.Column(
             [
                 ft.Container(height=8),
                 ft.Text(
-                    "Giriş Yap", size=28, weight=ft.FontWeight.W_300,
+                    "Giriş Yap", size=26, weight=ft.FontWeight.W_300,
                     color=theme.TEXT, font_family=theme.FONT_FAMILY_DISPLAY,
                     text_align=ft.TextAlign.CENTER,
                 ),
@@ -75,7 +88,7 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
                 ),
                 ft.Container(height=24),
                 f_user,
-                ft.Container(height=4),
+                ft.Container(height=8),
                 f_pass,
                 ft.Container(height=4),
                 err_text,
@@ -85,12 +98,31 @@ def build_login(page: ft.Page, on_success) -> ft.Control:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             tight=True, spacing=0,
         ),
-        width=380,
+        # Mobilde genişlik sınırı yok (ekran genişliğini kullan)
+        width=None if is_mobile else 380,
         bgcolor=theme.SURFACE,
         border=ft.border.all(1, theme.DIVIDER),
         border_radius=8,
-        padding=ft.padding.symmetric(horizontal=36, vertical=32),
+        padding=ft.padding.symmetric(horizontal=h_pad, vertical=v_pad),
     )
+
+    # Mobilde kart tam ekran genişliğinde, ortada
+    if is_mobile:
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Container(expand=True),
+                    ft.Container(
+                        content=card,
+                        padding=ft.padding.symmetric(horizontal=16),
+                    ),
+                    ft.Container(expand=True),
+                ],
+                expand=True,
+            ),
+            expand=True,
+            bgcolor=theme.BG,
+        )
 
     return ft.Container(
         content=ft.Column(

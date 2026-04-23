@@ -87,6 +87,7 @@ class SalonApp:
         self.page.appbar = None
         self.page.drawer = None
         self.page.add(ft.Row([sidebar, self.content_area], spacing=0, expand=True))
+        self.page.update()
 
     def _mount_mobile(self):
         self.content_area.padding = ft.padding.symmetric(horizontal=14, vertical=16)
@@ -128,6 +129,7 @@ class SalonApp:
         self._title_ref = title_ref
         self.page.appbar = appbar
         self.page.add(self.content_area)
+        self.page.update()
 
     def _build_drawer(self) -> ft.NavigationDrawer:
         tiles = []

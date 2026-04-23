@@ -82,9 +82,17 @@ class SalonApp:
             current_user=self.current_user,
             on_logout=self._logout,
         )
+        try:
+            from ui.views import dashboard_view as _dv
+            self.content_area.content = _dv.build(self.page)
+        except Exception as _ex:
+            self.content_area.content = ft.Container(
+                content=ft.Text(str(_ex), color=theme.ERROR, size=12),
+                padding=20,
+            )
+        self._active = "dashboard"
         self.page.add(ft.Row([sidebar, self.content_area], spacing=0, expand=True))
         self.page.update()
-        self.navigate("dashboard")
 
     def _mount_mobile(self):
         # Drawer
@@ -158,9 +166,18 @@ class SalonApp:
             ],
         )
 
+        # İçeriği sayfaya eklemeden önce set et — boş beyaz ekran önlenir
+        try:
+            from ui.views import dashboard_view as _dv
+            self.content_area.content = _dv.build(self.page)
+        except Exception as _ex:
+            self.content_area.content = ft.Container(
+                content=ft.Text(str(_ex), color=theme.ERROR, size=12),
+                padding=20,
+            )
+        self._active = "dashboard"
         self.page.add(self.content_area)
         self.page.update()
-        self.navigate("dashboard")
 
     def _open_drawer(self):
         try:
@@ -184,6 +201,9 @@ class SalonApp:
 
     # ── navigate ──────────────────────────────────────────────
     def navigate(self, key: str) -> None:
+        # mount sırasında dashboard zaten yüklendi, tekrar yükleme
+        if key == self._active and key == "dashboard" and self.content_area.content:
+            return
         builder = ROUTES.get(key)
         if not builder:
             return
@@ -193,11 +213,15 @@ class SalonApp:
             self.content_area.content = view
             self.page.update()
         except Exception as ex:
+            import traceback
             self.content_area.content = ft.Container(
                 content=ft.Column([
                     theme.h2("Bir şeyler ters gitti"),
                     ft.Container(height=8),
                     theme.body(str(ex), muted=True),
+                    ft.Container(height=8),
+                    ft.Text(traceback.format_exc()[:400], size=10,
+                            color=theme.TEXT_MUTED, selectable=True),
                 ]),
                 padding=40,
             )

@@ -14,6 +14,7 @@ from ui.views import (
     campaigns_view,
     sms_logs_view,
     settings_view,
+    reports_view,
 )
 
 
@@ -26,6 +27,7 @@ ROUTES = {
     "campaigns":    campaigns_view.build,
     "logs":         sms_logs_view.build,
     "settings":     settings_view.build,
+    "reports":      reports_view.build,
 }
 
 

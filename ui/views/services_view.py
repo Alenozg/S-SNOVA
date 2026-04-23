@@ -60,7 +60,8 @@ class ServicesView:
     # ==================================================================
     def refresh(self) -> None:
         items = service_service.list_services()
-        controls: list[ft.Control] = [self._header_row()]
+        is_mob = (self.page.width or 1200) < 768
+        controls: list[ft.Control] = [] if is_mob else [self._header_row()]
 
         if not items:
             controls.append(ft.Container(
@@ -83,7 +84,7 @@ class ServicesView:
             ))
         else:
             for s in items:
-                controls.append(self._service_row(s))
+                controls.append(self._service_row_mobile(s) if is_mob else self._service_row(s))
 
         self.list_container.controls = controls
         if self.list_container.page:
@@ -110,6 +111,34 @@ class ServicesView:
             padding=ft.padding.symmetric(horizontal=24, vertical=14),
             border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
             bgcolor=theme.SURFACE_ALT,
+        )
+
+    def _service_row_mobile(self, s: Service) -> ft.Container:
+        return ft.Container(
+            content=ft.Row([
+                ft.Column([
+                    ft.Text(s.name, size=13, weight=ft.FontWeight.W_500,
+                            color=theme.TEXT, no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS),
+                    ft.Row([
+                        ft.Text(f"{int(s.duration_min)} dk", size=11, color=theme.TEXT_MUTED),
+                        ft.Text("·", size=11, color=theme.TEXT_FAINT),
+                        ft.Text(f"{s.price:.0f} ₺", size=11,
+                                color=theme.ACCENT, weight=ft.FontWeight.W_500),
+                    ], spacing=6),
+                ], spacing=3, expand=True),
+                ft.Container(
+                    content=ft.Text("Aktif" if s.active else "Pasif",
+                                    size=10, color=theme.SURFACE, weight=ft.FontWeight.W_500),
+                    padding=ft.padding.symmetric(horizontal=6, vertical=3),
+                    bgcolor=theme.SUCCESS if s.active else theme.TEXT_MUTED, border_radius=2,
+                ),
+                ft.IconButton(ft.icons.EDIT_OUTLINED, icon_size=16,
+                              icon_color=theme.TEXT_MUTED,
+                              on_click=lambda e, sv=s: self.open_form(sv)),
+            ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=ft.padding.symmetric(horizontal=14, vertical=11),
+            border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
         )
 
     def _service_row(self, s: Service) -> ft.Container:

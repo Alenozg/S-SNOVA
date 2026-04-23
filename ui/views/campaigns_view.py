@@ -84,15 +84,17 @@ class CampaignsView:
 
     def refresh(self) -> None:
         items = campaign_service.list_campaigns()
-        controls: list[ft.Control] = [self._header_row()]
+        is_mob = (self.page.width or 1200) < 768
+        controls: list[ft.Control] = [] if is_mob else [self._header_row()]
         if not items:
             controls.append(ft.Container(
                 content=theme.body("Henüz kampanya gönderilmemiş.", muted=True),
                 padding=40, alignment=ft.alignment.center,
             ))
         else:
+            is_mob = (self.page.width or 1200) < 768
             for c in items:
-                controls.append(self._row(c))
+                controls.append(self._row_mobile(c) if is_mob else self._row(c))
 
         self.list_container.controls = controls
         if self.list_container.page:
@@ -120,6 +122,39 @@ class CampaignsView:
             padding=ft.padding.symmetric(horizontal=24, vertical=14),
             border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
             bgcolor=theme.SURFACE_ALT,
+        )
+
+    def _row_mobile(self, c: dict) -> ft.Container:
+        status_color = theme.SUCCESS if c["status"] == "sent" else theme.TEXT_MUTED
+        sent_at = c.get("sent_at") or c.get("created_at") or ""
+        try:
+            from datetime import datetime
+            sent_at = datetime.fromisoformat(sent_at).strftime("%d.%m.%Y")
+        except Exception:
+            pass
+        return ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Text(c["name"], size=13, weight=ft.FontWeight.W_500,
+                            color=theme.TEXT, expand=True, no_wrap=True,
+                            overflow=ft.TextOverflow.ELLIPSIS),
+                    ft.Container(
+                        content=ft.Text("Gönderildi" if c["status"]=="sent" else "Taslak",
+                                        size=10, color=theme.SURFACE, weight=ft.FontWeight.W_500),
+                        padding=ft.padding.symmetric(horizontal=6, vertical=3),
+                        bgcolor=status_color, border_radius=2,
+                    ),
+                ], spacing=8),
+                ft.Row([
+                    ft.Text(f"Hedef: {c['target_count']}", size=11, color=theme.TEXT_MUTED),
+                    ft.Text(f"✓ {c['sent_count']}", size=11, color=theme.SUCCESS),
+                    ft.Text(f"✗ {c['failed_count']}", size=11, color=theme.ERROR),
+                    ft.Container(expand=True),
+                    ft.Text(str(sent_at)[:10], size=10, color=theme.TEXT_FAINT),
+                ], spacing=10),
+            ], spacing=6),
+            padding=ft.padding.symmetric(horizontal=14, vertical=12),
+            border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
         )
 
     def _row(self, c: dict) -> ft.Container:

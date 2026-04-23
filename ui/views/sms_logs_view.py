@@ -134,7 +134,8 @@ def build(page: ft.Page) -> ft.Control:
         border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
     )
 
-    rows: list[ft.Control] = [header]
+    is_mob = (page.width or 1200) < 768
+    rows: list[ft.Control] = [] if is_mob else [header]
 
     if not logs:
         rows.append(ft.Container(
@@ -174,7 +175,28 @@ def build(page: ft.Page) -> ft.Control:
                 weight=ft.FontWeight.W_500,
             )
 
-            rows.append(ft.Container(
+            if is_mob:
+                rows.append(ft.Container(
+                    content=ft.Row([
+                        type_chip,
+                        ft.Column([
+                            ft.Text(log.get("customer_name") or "—",
+                                    size=12, weight=ft.FontWeight.W_500, color=theme.TEXT),
+                            ft.Text((log.get("message") or "")[:60], size=10,
+                                    color=theme.TEXT_MUTED, max_lines=1,
+                                    overflow=ft.TextOverflow.ELLIPSIS),
+                            ft.Text(str(ts), size=10, color=theme.TEXT_FAINT),
+                        ], spacing=2, expand=True),
+                        ft.Column([
+                            status_icon,
+                            ft.Text(_fmt_cost(cost), size=10, color=theme.TEXT_MUTED),
+                        ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                    padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                    border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
+                ))
+            else:
+                rows.append(ft.Container(
                 content=ft.Row(
                     [
                         ft.Container(content=theme.caption(str(ts)), width=140),

@@ -87,7 +87,7 @@ class StaffView:
             ))
         else:
             for s in staff_list:
-                controls.append(self._staff_row(s))
+                controls.append(self._staff_row_mobile(s) if is_mobile else self._staff_row(s))
 
         self.list_container.controls = controls
         if self.list_container.page:
@@ -115,6 +115,40 @@ class StaffView:
             padding=ft.padding.symmetric(horizontal=24, vertical=14),
             border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
             bgcolor=theme.SURFACE_ALT,
+        )
+
+    def _staff_row_mobile(self, s: Staff) -> ft.Container:
+        """Mobil için kompakt personel kartı."""
+        color_dot = ft.Container(
+            content=ft.Text(s.initials, size=11, weight=ft.FontWeight.W_500,
+                            color="#FFFFFF", text_align=ft.TextAlign.CENTER),
+            width=32, height=32, bgcolor=s.color, border_radius=16,
+            alignment=ft.alignment.center,
+        )
+        return ft.Container(
+            content=ft.Row([
+                color_dot,
+                ft.Container(width=8),
+                ft.Column([
+                    ft.Text(s.full_name, size=13, weight=ft.FontWeight.W_500,
+                            color=theme.TEXT, no_wrap=True),
+                    ft.Text(s.role or "—", size=11, color=theme.TEXT_MUTED),
+                ], spacing=2, expand=True),
+                ft.Container(
+                    content=ft.Text("Aktif" if s.active else "Pasif", size=10,
+                                    color=theme.SURFACE, weight=ft.FontWeight.W_500),
+                    padding=ft.padding.symmetric(horizontal=6, vertical=3),
+                    bgcolor=theme.SUCCESS if s.active else theme.TEXT_MUTED,
+                    border_radius=2,
+                ),
+                ft.IconButton(ft.icons.EDIT_OUTLINED, icon_size=16,
+                              icon_color=theme.TEXT_MUTED,
+                              on_click=lambda e, sid=s.id: self._open_dialog(edit_id=sid)),
+            ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=ft.padding.symmetric(horizontal=16, vertical=12),
+            border=ft.border.only(bottom=ft.BorderSide(1, theme.DIVIDER)),
+            ink=True,
+            on_click=lambda e, sid=s.id: self._open_dialog(edit_id=sid),
         )
 
     def _staff_row(self, s: Staff) -> ft.Container:
